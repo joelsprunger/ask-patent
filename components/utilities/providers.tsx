@@ -1,19 +1,21 @@
 "use client"
 
+import { supabase } from "@/lib/supabase/client"
 import { ThemeProvider } from "next-themes"
-import { Toaster } from "@/components/ui/toaster"
-import { Session } from "@supabase/supabase-js"
 
-interface ProvidersProps {
+export interface ProvidersProps {
   children: React.ReactNode
-  session: Session | null
 }
 
-export function Providers({ children, session }: ProvidersProps) {
+export function Providers({ children }: ProvidersProps) {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
       {children}
-      <Toaster />
     </ThemeProvider>
   )
 }

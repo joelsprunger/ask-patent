@@ -1,38 +1,20 @@
-"use server"
+"use client"
 
 import { Toaster } from "@/components/ui/toaster"
 import { Providers } from "@/components/utilities/providers"
-import type { Metadata } from "next"
-import localFont from "next/font/local"
+import { Inter } from "next/font/google"
 import "./globals.css"
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900"
-})
-
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900"
-})
-
-export const metadata: Metadata = {
-  title: "Ask Patent",
-  description: "AI powered patent search and exploration"
-}
+const inter = Inter({ subsets: ["latin"] })
 
 export default function RootLayout({
   children
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en">
+      <body className={inter.className}>
         <Providers>
           {children}
           <Toaster />

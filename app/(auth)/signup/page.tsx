@@ -1,13 +1,13 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
 import SignUpForm from "./_components/signup-form"
 
 export default async function SignUpPage() {
-  const supabase = await createClient()
+  const supabase = await createServerSupabaseClient()
   const {
     data: { session }
   } = await supabase.auth.getSession()

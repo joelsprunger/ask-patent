@@ -1,6 +1,6 @@
 "use server"
 
-import { createClient } from "@/lib/supabase/server"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { ActionState } from "@/types"
 import { revalidatePath } from "next/cache"
 
@@ -14,7 +14,7 @@ export async function signUpAction(
   data: SignUpData
 ): Promise<ActionState<null>> {
   try {
-    const supabase = await createClient()
+    const supabase = await createServerSupabaseClient()
 
     const { error } = await supabase.auth.signUp({
       email: data.email,

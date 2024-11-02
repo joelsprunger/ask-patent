@@ -1,29 +1,19 @@
-"use client"
+import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
 
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
-import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-
-export default function AuthLayout({
+export default async function AuthLayout({
   children
 }: {
   children: React.ReactNode
 }) {
-  const router = useRouter()
-  const supabase = createClientComponentClient()
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { session }
+  } = await supabase.auth.getSession()
 
-  useEffect(() => {
-    const checkUser = async () => {
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
-      if (session) {
-        router.push("/")
-      }
-    }
-
-    checkUser()
-  }, [router, supabase])
+  if (session) {
+    redirect("/")
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center py-2">
