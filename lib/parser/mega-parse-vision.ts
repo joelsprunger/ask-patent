@@ -11,9 +11,12 @@ export class MegaParseVision {
 
   constructor(options: ParserOptions) {
     const supportedModels = [
-      "gpt-4-vision-preview",
+      "gpt-4o",
+      "gpt-4o-turbo",
+      "claude-3-5-sonnet-20241022",
+      "claude-3-5-sonnet",
       "claude-3-opus-20240229",
-      "claude-3-sonnet-20240229"
+      "claude-3-opus"
     ]
 
     if (!supportedModels.includes(options.model)) {
