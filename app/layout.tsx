@@ -1,6 +1,5 @@
 "use server"
 
-import { createClient } from "@/utils/supabase/server"
 import { Toaster } from "@/components/ui/toaster"
 import { Providers } from "@/components/utilities/providers"
 import type { Metadata } from "next"
@@ -24,30 +23,18 @@ export const metadata: Metadata = {
   description: "AI powered patent search and exploration"
 }
 
-export default async function RootLayout({
+export default function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  const supabase = createClient()
-  const {
-    data: { session }
-  } = await supabase.auth.getSession()
-
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Providers
-          attribute="class"
-          defaultTheme="dark"
-          disableTransitionOnChange
-          supabase={supabase}
-          session={session}
-        >
+        <Providers>
           {children}
-
           <Toaster />
         </Providers>
       </body>
