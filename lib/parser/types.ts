@@ -6,7 +6,7 @@ export enum TagEnum {
 }
 
 export interface ParserOptions {
-  model: string
+  modelName: string
   batchSize?: number
 }
 

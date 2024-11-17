@@ -1,12 +1,12 @@
 import { TagEnum, ParserOptions, ParsedResult } from "./types"
 import { BASE_OCR_PROMPT } from "./prompts"
-import OpenAI from "openai"
-import { PDFDocument } from "pdf-lib"
-import * as upng from "@pdf-lib/upng"
+import { ChatOpenAI } from "@langchain/openai"
+import { HumanMessage } from "@langchain/core/messages"
+import * as pdfjsLib from "pdfjs-dist"
+import { createCanvas } from "@napi-rs/canvas"
 
 export class MegaParseVision {
-  private model: string
-  private openai: OpenAI
+  private model: ChatOpenAI
   private parsedChunks: string[] | null = null
 
   constructor(options: ParserOptions) {
@@ -19,44 +19,54 @@ export class MegaParseVision {
       "claude-3-opus"
     ]
 
-    if (!supportedModels.includes(options.model)) {
+    if (!supportedModels.includes(options.modelName)) {
       throw new Error(
         "Invalid model name. MegaParse vision only supports models with vision capabilities."
       )
     }
 
-    this.model = options.model
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY
+    this.model = new ChatOpenAI({
+      modelName: options.modelName
     })
   }
 
-  private async processFile(file: File): Promise<string[]> {
+  private async processFile(arrayBuffer: ArrayBuffer): Promise<string[]> {
     try {
-      const arrayBuffer = await file.arrayBuffer()
-      const pdfDoc = await PDFDocument.load(arrayBuffer)
       const imagesBase64: string[] = []
 
-      for (let i = 0; i < pdfDoc.getPageCount(); i++) {
-        const page = pdfDoc.getPages()[i]
-        const { width, height } = page.getSize()
+      // Load the PDF document using pdfjs-dist
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer })
+      const pdfDocument = await loadingTask.promise
 
-        // Create a new PDF with just this page
-        const singlePagePdf = await PDFDocument.create()
-        const [copiedPage] = await singlePagePdf.copyPages(pdfDoc, [i])
-        singlePagePdf.addPage(copiedPage)
+      const numPages = pdfDocument.numPages
 
-        // Convert to PNG
-        const pngBytes = await singlePagePdf.saveAsBase64({ dataUri: true })
-        const pngImage = await upng.decode(Buffer.from(pngBytes, "base64"))
-        const base64Image = Buffer.from(pngImage.data).toString("base64")
+      for (let pageIndex = 1; pageIndex <= numPages; pageIndex++) {
+        const page = await pdfDocument.getPage(pageIndex)
+        const viewport = page.getViewport({ scale: 2.0 })
 
+        // Create a canvas using @napi-rs/canvas
+        const canvas = createCanvas(viewport.width, viewport.height)
+        const context = canvas.getContext("2d")
+
+        const renderContext = {
+          canvasContext: context as unknown as CanvasRenderingContext2D,
+          viewport: viewport
+        }
+
+        // Render the page into the canvas
+        await page.render(renderContext).promise
+
+        // Convert the canvas to a PNG buffer
+        const imageBuffer = canvas.toBuffer("image/png")
+
+        // Convert the buffer to a base64 string
+        const base64Image = imageBuffer.toString("base64")
         imagesBase64.push(base64Image)
       }
 
       return imagesBase64
-    } catch (error) {
-      throw new Error(`Error processing PDF file: ${error}`)
+    } catch (error: any) {
+      throw new Error(`Error processing PDF file: ${error.message}`)
     }
   }
 
@@ -74,23 +84,22 @@ export class MegaParseVision {
 
   private async sendToMLM(imagesData: string[]): Promise<string> {
     try {
-      const response = await this.openai.chat.completions.create({
-        model: this.model,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: BASE_OCR_PROMPT },
-              ...imagesData.map(image => ({
-                type: "image_url",
-                image_url: { url: `data:image/jpeg;base64,${image}` }
-              }))
-            ]
-          }
-        ]
-      })
+      const content = [
+        {
+          type: "text",
+          text: BASE_OCR_PROMPT
+        },
+        ...imagesData.map(image => ({
+          type: "image_url",
+          image_url: `data:image/jpeg;base64,${image}`
+        }))
+      ]
 
-      return response.choices[0].message.content || ""
+      const message = new HumanMessage({ content })
+      const response = await this.model.invoke([message])
+      console.log(response)
+
+      return response.content.toString()
     } catch (error) {
       throw new Error(`Error processing with language model: ${error}`)
     }
@@ -131,7 +140,8 @@ export class MegaParseVision {
     file: File,
     batchSize: number = 3
   ): Promise<ParsedResult> {
-    const pdfBase64 = await this.processFile(file)
+    const arrayBuffer = await file.arrayBuffer()
+    const pdfBase64 = await this.processFile(arrayBuffer)
     const batches: string[][] = []
 
     // Create batches of images
