@@ -11,7 +11,7 @@ import * as pdfjsLib from "pdfjs-dist"
 pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
 
 interface PDFDropzoneProps {
-  onFileConverted: (pngUrl: string) => void
+  onFileConverted: (pngUrl: string, originalFile: File) => void
 }
 
 export function PDFDropzone({ onFileConverted }: PDFDropzoneProps) {
@@ -53,7 +53,7 @@ export function PDFDropzone({ onFileConverted }: PDFDropzoneProps) {
         }).promise
 
         const pngUrl = canvas.toDataURL()
-        onFileConverted(pngUrl)
+        onFileConverted(pngUrl, file)
       } catch (error) {
         toast.error("Error converting PDF")
         console.error(error)

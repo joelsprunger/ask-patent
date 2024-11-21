@@ -8,22 +8,22 @@ export async function parsePdfAction(
   file: File
 ): Promise<ActionState<ParsedResult>> {
   try {
-    const megaParseVision = new MegaParseVision({
-      modelName: process.env.OPENAI_MODEL_NAME as string
+    const parser = new MegaParseVision({
+      modelName: "gpt-4-vision-preview"
     })
 
-    const result = await megaParseVision.convert(file)
+    const result = await parser.convert(file)
 
     return {
       isSuccess: true,
-      message: "PDF processed successfully",
+      message: "Successfully parsed PDF",
       data: result
     }
   } catch (error) {
-    console.error("Error processing PDF:", error)
+    console.error("Error parsing PDF:", error)
     return {
       isSuccess: false,
-      message: error instanceof Error ? error.message : "Failed to process PDF"
+      message: error instanceof Error ? error.message : "Failed to parse PDF"
     }
   }
 }
