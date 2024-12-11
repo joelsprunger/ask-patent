@@ -160,3 +160,63 @@ export async function askPatentQuestionAction(
     return { isSuccess: false, message: "Failed to get answer" }
   }
 }
+
+export async function getSuggestedQuestionsAction(
+  patentId: string,
+  n: number = 3,
+  section: PatentSection = "summary"
+): Promise<ActionState<string[]>> {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const {
+      data: { session }
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      return {
+        isSuccess: false,
+        message: "Not authenticated"
+      }
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    if (!apiUrl) {
+      throw new Error("API URL not configured")
+    }
+
+    const url = new URL(`/patents/${patentId}/suggest_questions`, apiUrl)
+    url.searchParams.append("n", n.toString())
+    url.searchParams.append("section", section)
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        Accept: "application/json"
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to get suggested questions")
+    }
+
+    const data = await response.json()
+    console.log("[Suggested Questions]:", data.data.questions.questions);
+    return {
+      isSuccess: true,
+      message: "Questions suggested successfully",
+      data: data.data.questions.questions
+    }
+  } catch (error) {
+    console.error("Error getting suggested questions:", error)
+    return { 
+      isSuccess: false, 
+      message: "Failed to get suggested questions",
+      data: [
+        "What are the key innovations in this patent?",
+        "How does this compare to existing patents?",
+        "What are the potential applications of this technology?"
+      ] 
+    }
+  }
+}
