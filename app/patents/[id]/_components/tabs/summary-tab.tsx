@@ -13,6 +13,9 @@ import { PatentSection } from "@/types/patent-types"
 import { getPatentSummaryAction } from "@/actions/patents-actions"
 import { Loader2 } from "lucide-react"
 import Markdown from "react-markdown"
+import rehypeKatex from "rehype-katex"
+import remarkMath from "remark-math"
+import "katex/dist/katex.min.css"
 
 interface SummaryTabProps {
   patentId: string
@@ -75,6 +78,8 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
       {summary ? (
         <div className="prose prose-headings:mt-4 prose-p:mt-2 prose-ul:mt-2 max-w-none dark:prose-invert">
           <Markdown
+            remarkPlugins={[remarkMath]}
+            rehypePlugins={[rehypeKatex]}
             components={{
               h1: ({ children }) => <h1 className="mb-4">{children}</h1>,
               h2: ({ children }) => <h2 className="mt-6 mb-4">{children}</h2>,

@@ -4,6 +4,9 @@ import { ChatMessage } from "@/types"
 import { cn } from "@/lib/utils"
 import { Loader2 } from "lucide-react"
 import Markdown from "react-markdown"
+import rehypeKatex from "rehype-katex"
+import remarkMath from "remark-math"
+import "katex/dist/katex.min.css"
 
 interface ChatMessagesProps {
   messages: ChatMessage[]
@@ -31,6 +34,8 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
           >
             <div className="prose prose-sm dark:prose-invert">
               <Markdown
+                remarkPlugins={[remarkMath]}
+                rehypePlugins={[rehypeKatex]}
                 components={{
                   p: ({ children }) => <p className="m-0">{children}</p>
                 }}
