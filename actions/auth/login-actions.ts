@@ -2,6 +2,7 @@
 
 import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { ActionState } from "@/types"
+import { Session } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
 
 interface LoginData {
@@ -9,11 +10,13 @@ interface LoginData {
   password: string
 }
 
-export async function loginAction(data: LoginData): Promise<ActionState<null>> {
+export async function loginAction(
+  data: LoginData
+): Promise<ActionState<{ session: Session | null }>> {
   try {
     const supabase = await createServerSupabaseClient()
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password
     })
@@ -28,7 +31,10 @@ export async function loginAction(data: LoginData): Promise<ActionState<null>> {
     revalidatePath("/", "layout")
     return {
       isSuccess: true,
-      message: "Logged in successfully"
+      message: "Logged in successfully",
+      data: {
+        session: authData.session
+      }
     }
   } catch (error) {
     return {

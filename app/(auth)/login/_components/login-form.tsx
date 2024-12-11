@@ -26,6 +26,11 @@ export default function LoginForm() {
       return
     }
 
+    if (result.data?.session) {
+      console.log("Access Token:", result.data.session.access_token)
+      console.log("Refresh Token:", result.data.session.refresh_token)
+    }
+
     router.push("/")
     router.refresh()
   }

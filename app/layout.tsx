@@ -1,9 +1,6 @@
-"use client"
-
-import { Toaster } from "@/components/ui/toaster"
+import "@/app/globals.css"
 import { Providers } from "@/components/utilities/providers"
 import { Inter } from "next/font/google"
-import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -13,12 +10,11 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
-        <Providers>
-          {children}
-          <Toaster />
-        </Providers>
+    <html lang="en" suppressHydrationWarning>
+      <body
+        className={`${inter.className} min-h-screen bg-background antialiased`}
+      >
+        <Providers>{children}</Providers>
       </body>
     </html>
   )
