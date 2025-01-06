@@ -20,10 +20,8 @@ export function PatentCard({
   animate = true
 }: PatentCardProps) {
   const authorString = patent.authors
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\((.*?)\)/g, "")
+    ? patent.authors.join(" ").replace(/\s+/g, " ").trim()
+    : ""
 
   const content = (
     <Card className="w-full mb-4 bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:shadow-lg transition-all">
@@ -45,7 +43,9 @@ export function PatentCard({
 
       <CardContent>
         <ScrollArea className="h-[200px] w-full rounded-md border border-zinc-800 bg-zinc-950 p-4">
-          <p className="text-zinc-300 leading-relaxed">{patent.abstract}</p>
+          <p className="text-zinc-300 leading-relaxed">
+            {patent.abstract || "No abstract available"}
+          </p>
         </ScrollArea>
       </CardContent>
     </Card>

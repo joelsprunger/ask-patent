@@ -2,13 +2,13 @@ export interface Patent {
   id: string
   patent_number: string
   title: string
-  applicant: string
-  patent_type: string
-  abstract: string
-  authors: string[]
+  applicant: string | null
+  patent_type: string | null
+  abstract: string | null
+  authors: string[] | null
   filing_date: string | null
-  created_at: string
-  updated_at: string
+  created_at: string | null
+  updated_at: string | null
 }
 
 export interface SearchResponse {

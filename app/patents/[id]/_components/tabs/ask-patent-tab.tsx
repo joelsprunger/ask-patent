@@ -9,7 +9,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChatMessage, Chat } from "@/types"
 import { ChatHistory } from "./chat-history"
 import { ChatMessages } from "./chat-messages"
-import { cn } from "@/lib/utils"
 import { useLocalStorage } from "@/lib/hooks/use-local-storage"
 import { v4 as uuidv4 } from "uuid"
 import { summarizeTextAction } from "@/actions/utils-actions"
@@ -59,7 +58,7 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
         setChats(prev => [...prev, newChat])
       }
     }
-  }, [patentId, chats, currentChat])
+  }, [patentId, chats, currentChat, setChats])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })

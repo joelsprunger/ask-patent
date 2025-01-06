@@ -12,16 +12,15 @@ interface LoginData {
 export async function loginAction(data: LoginData): Promise<ActionState<null>> {
   try {
     const supabase = await createServerSupabaseClient()
-
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email: data.email,
       password: data.password
     })
 
-    if (error) {
+    if (signInError) {
       return {
         isSuccess: false,
-        message: error.message
+        message: signInError.message
       }
     }
 
@@ -30,10 +29,12 @@ export async function loginAction(data: LoginData): Promise<ActionState<null>> {
       isSuccess: true,
       message: "Logged in successfully"
     }
-  } catch (error) {
+    
+  } catch (err) {
+    console.error("Login error:", err)
     return {
       isSuccess: false,
-      message: "An unexpected error occurred"
+      message: "An unexpected error occurred during login"
     }
   }
 }
