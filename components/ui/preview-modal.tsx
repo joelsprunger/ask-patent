@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
@@ -24,10 +25,13 @@ export function PreviewModal({
       <DialogContent className="sm:max-w-[600px]">
         <div className="flex flex-col gap-4">
           <div className="relative aspect-square w-full">
-            <img
+            <Image
               src={imageUrl}
               alt="Preview"
+              fill
               className="rounded-lg object-contain"
+              sizes="(max-width: 600px) 100vw, 600px"
+              priority
             />
           </div>
 

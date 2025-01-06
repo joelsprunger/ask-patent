@@ -41,6 +41,9 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
         setSummary(response.data)
         localStorage.setItem(`summary/${patentId}/${section}`, response.data)
       }
+    } catch (err) {
+      console.error("Failed to process summary:", err)
+      return { isSuccess: false, message: "Failed to process summary" }
     } finally {
       setIsLoading(false)
     }

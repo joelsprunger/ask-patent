@@ -5,7 +5,6 @@ import { getSimilarPatentsAction } from "@/actions/patents-actions"
 import { PatentCard } from "@/components/ui/patent-card"
 import { Suspense } from "react"
 import { PatentSkeleton } from "./_components/patent-skeleton"
-import { Patent } from "@/types/patents-types"
 import { PatentTabs } from "./_components/patent-tabs"
 
 interface PatentPageProps {
