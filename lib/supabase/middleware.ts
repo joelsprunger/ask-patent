@@ -1,33 +1,44 @@
-import { createServerClient } from "@supabase/ssr"
-import { NextResponse, type NextRequest } from "next/server"
+import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { type NextRequest, NextResponse } from "next/server"
+
+export const createServerSupabaseClient = (request: NextRequest) => {
+  // Ensure environment variables are available
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL environment variable")
+  }
+  if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable")
+  }
+
+  const cookies = new Map(request.cookies.getAll().map(c => [c.name, c.value]))
+
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        get(name: string) {
+          return cookies.get(name)
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          // If the cookie is updated, update the cookies Map and the response
+          cookies.set(name, value)
+        },
+        remove(name: string, options: CookieOptions) {
+          // If the cookie is removed, update the cookies Map
+          cookies.delete(name)
+        },
+      },
+    }
+  )
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request
   })
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        }
-      }
-    }
-  )
+  const supabase = createServerSupabaseClient(request)
 
   // IMPORTANT: Avoid writing any logic between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug

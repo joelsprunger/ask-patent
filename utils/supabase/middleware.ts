@@ -2,14 +2,25 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
+  // Create initial response
   let response = NextResponse.next({
     request,
   })
 
+  // Check if environment variables are available
+  const supabaseUrl = process.env.SUPABASE_URL
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
+
+  // If environment variables are missing, skip auth check
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Supabase credentials not available')
+    return response
+  }
+
   try {
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      supabaseUrl,
+      supabaseAnonKey,
       {
         cookies: {
           getAll() {
@@ -33,12 +44,14 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    // If user is not signed in and the path isn't login/auth related, redirect to login
-    if (
-      !user &&
-      !request.nextUrl.pathname.startsWith('/login') &&
-      !request.nextUrl.pathname.startsWith('/auth')
-    ) {
+    // Allow access to public routes even when not authenticated
+    const publicRoutes = ['/login', '/auth', '/', '/about']
+    const isPublicRoute = publicRoutes.some(route => 
+      request.nextUrl.pathname.startsWith(route)
+    )
+
+    // If user is not signed in and trying to access protected route, redirect to login
+    if (!user && !isPublicRoute) {
       const redirectUrl = new URL('/login', request.url)
       return NextResponse.redirect(redirectUrl)
     }
