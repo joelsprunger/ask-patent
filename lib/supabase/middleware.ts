@@ -1,63 +1,64 @@
-import { createServerClient } from "@supabase/ssr"
-import { type NextRequest, NextResponse } from "next/server"
-
-export const createServerSupabaseClient = (request: NextRequest) => {
-  // Ensure environment variables are available
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL environment variable")
-  }
-  if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    throw new Error("Missing NEXT_PUBLIC_SUPABASE_ANON_KEY environment variable")
-  }
-
-  const cookies = new Map(request.cookies.getAll().map(c => [c.name, c.value]))
-
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        get(name: string) {
-          return cookies.get(name)
-        },
-        set(name: string, value: string) {
-          // If the cookie is updated, update the cookies Map and the response
-          cookies.set(name, value)
-        },
-        remove(name: string) {
-          // If the cookie is removed, update the cookies Map
-          cookies.delete(name)
-        },
-      },
-    }
-  )
-}
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
 
 export async function updateSession(request: NextRequest) {
-  const supabaseResponse = NextResponse.next({
-    request
+  // Create initial response
+  let response = NextResponse.next({
+    request,
   })
 
-  const supabase = createServerSupabaseClient(request)
+  // Check if environment variables are available
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
-  const {
-    data: { user }
-  } = await supabase.auth.getUser()
-
-  const authRoutes = ["/login", "/signup", "/reset-password"]
-  const isAuthRoute = authRoutes.some(route =>
-    request.nextUrl.pathname.startsWith(route)
-  )
-
-  if (!user && !isAuthRoute) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/login"
-    return NextResponse.redirect(url)
+  // If environment variables are missing, skip auth check
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Supabase credentials not available')
+    return response
   }
 
-  return supabaseResponse
-}
+  try {
+    const supabase = createServerClient(
+      supabaseUrl,
+      supabaseAnonKey,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set({
+                name,
+                value,
+                ...options,
+              })
+            })
+          },
+        },
+      }
+    )
+
+    // IMPORTANT: Get user before any other actions
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    // Allow access to public routes even when not authenticated
+    const publicRoutes = ['/login', '/auth', '/', '/about']
+    const isPublicRoute = publicRoutes.some(route => 
+      request.nextUrl.pathname.startsWith(route)
+    )
+
+    // If user is not signed in and trying to access protected route, redirect to login
+    if (!user && !isPublicRoute) {
+      const redirectUrl = new URL('/login', request.url)
+      return NextResponse.redirect(redirectUrl)
+    }
+
+    return response
+  } catch (e) {
+    console.error('Middleware error:', e)
+    return response
+  }
+} 
