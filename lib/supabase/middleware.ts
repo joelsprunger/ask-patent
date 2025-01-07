@@ -1,4 +1,4 @@
-import { createServerClient, type CookieOptions } from "@supabase/ssr"
+import { createServerClient } from "@supabase/ssr"
 import { type NextRequest, NextResponse } from "next/server"
 
 export const createServerSupabaseClient = (request: NextRequest) => {
@@ -20,11 +20,11 @@ export const createServerSupabaseClient = (request: NextRequest) => {
         get(name: string) {
           return cookies.get(name)
         },
-        set(name: string, value: string, options: CookieOptions) {
+        set(name: string, value: string) {
           // If the cookie is updated, update the cookies Map and the response
           cookies.set(name, value)
         },
-        remove(name: string, options: CookieOptions) {
+        remove(name: string) {
           // If the cookie is removed, update the cookies Map
           cookies.delete(name)
         },
@@ -34,7 +34,7 @@ export const createServerSupabaseClient = (request: NextRequest) => {
 }
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
+  const supabaseResponse = NextResponse.next({
     request
   })
 
