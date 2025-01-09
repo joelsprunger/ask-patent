@@ -44,8 +44,6 @@ export async function updateSession(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
 
-    console.log('User:', user)
-
     // Allow access to public routes even when not authenticated
     const publicRoutes = ['/login', '/signup', '/about']
     const isPublicRoute = request.nextUrl.pathname === '/' || publicRoutes.some(route => 
@@ -54,7 +52,6 @@ export async function updateSession(request: NextRequest) {
 
     // If user is not signed in and trying to access protected route, redirect to login
     if (!user && !isPublicRoute) {
-      console.log('Redirecting to login')
       const redirectUrl = new URL('/login', request.url)
       return NextResponse.redirect(redirectUrl)
     }
