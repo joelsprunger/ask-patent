@@ -90,7 +90,6 @@ export async function getPatentSummaryAction(
     })
 
     const data = await response.json()
-    console.log("[Patent Summary]:", data.data.summary);
 
     if (!response.ok) {
       throw new Error(data.message || "Failed to get summary")
