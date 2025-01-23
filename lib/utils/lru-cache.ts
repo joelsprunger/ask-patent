@@ -1,34 +1,84 @@
-export class LRUCache<K, V> {
-  private capacity: number
-  private cache: Map<K, V>
+interface CacheData<K extends string, V> {
+  order: K[];
+  items: Record<K, V>;
+}
 
-  constructor(capacity: number) {
+export class LRUCache<K extends string, V> {
+  private capacity: number
+  private storageKey: string
+  
+  constructor(capacity: number, namespace: string = 'lru') {
     this.capacity = capacity
-    this.cache = new Map()
+    this.storageKey = `${namespace}_cache`
+    
+    // Initialize cache if it doesn't exist
+    if (typeof window !== 'undefined' && !localStorage.getItem(this.storageKey)) {
+      this.saveCache({
+        order: [],
+        items: {} as Record<K, V>
+      })
+    }
+  }
+
+  private getCache(): CacheData<K, V> {
+    if (typeof window === 'undefined') {
+      return { order: [], items: {} as Record<K, V> };
+    }
+    return JSON.parse(localStorage.getItem(this.storageKey) || '{"order":[],"items":{}}')
+  }
+
+  private saveCache(cache: CacheData<K, V>): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem(this.storageKey, JSON.stringify(cache))
   }
 
   get(key: K): V | undefined {
-    if (!this.cache.has(key)) return undefined
+    const cache = this.getCache()
+    
+    if (!(key in cache.items)) return undefined
 
-    // Get the value and refresh it by deleting and setting again
-    const value = this.cache.get(key)
-    this.cache.delete(key)
-    this.cache.set(key, value!)
-    return value
+    // Update access order
+    cache.order = [
+      key,
+      ...cache.order.filter(k => k !== key)
+    ]
+    
+    this.saveCache(cache)
+    return cache.items[key]
   }
 
   set(key: K, value: V): void {
-    if (this.cache.has(key)) {
-      // If key exists, refresh it
-      this.cache.delete(key)
-    } else if (this.cache.size >= this.capacity) {
-      // If at capacity, delete oldest item (first item in Map)
-      this.cache.delete(this.cache.keys().next().value)
+    const cache = this.getCache()
+
+    // If key exists, just update it and refresh its position
+    if (key in cache.items) {
+      cache.items[key] = value
+      cache.order = [
+        key,
+        ...cache.order.filter(k => k !== key)
+      ]
+      this.saveCache(cache)
+      return
     }
-    this.cache.set(key, value)
+
+    // If at capacity, remove oldest item
+    if (cache.order.length >= this.capacity) {
+      const oldest = cache.order.pop()
+      if (oldest) {
+        delete cache.items[oldest]
+      }
+    }
+
+    // Add new item
+    cache.items[key] = value
+    cache.order = [key, ...cache.order]
+    this.saveCache(cache)
   }
 
   clear(): void {
-    this.cache.clear()
+    this.saveCache({
+      order: [],
+      items: {} as Record<K, V>
+    })
   }
 } 

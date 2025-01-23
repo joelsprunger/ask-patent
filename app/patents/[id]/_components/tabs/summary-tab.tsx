@@ -32,8 +32,8 @@ interface SummaryTabProps {
 }
 
 // Create LRU cache instance for sections and summaries
-const sectionCache = new LRUCache<string, string>(50) // Cache up to 50 sections
-const summaryCache = new LRUCache<string, string>(50) // Cache up to 50 summaries
+const sectionCache = new LRUCache<string, string>(50, "patent_sections") // Cache up to 50 sections
+const summaryCache = new LRUCache<string, string>(50, "patent_summaries") // Cache up to 50 summaries
 
 // Shared markdown components configuration
 const markdownComponents: Partial<Components> = {
