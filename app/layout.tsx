@@ -1,6 +1,7 @@
 import "@/app/globals.css"
 import { Providers } from "@/components/utilities/providers"
 import { Inter } from "next/font/google"
+import { SearchProvider } from "@/lib/providers/search-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -14,7 +15,9 @@ export default function RootLayout({
       <body
         className={`${inter.className} min-h-screen bg-background antialiased`}
       >
-        <Providers>{children}</Providers>
+        <SearchProvider>
+          <Providers>{children}</Providers>
+        </SearchProvider>
       </body>
     </html>
   )

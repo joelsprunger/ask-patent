@@ -39,7 +39,6 @@ export async function getSimilarPatentsAction(
     } = await supabase.auth.getSession()
 
     if (!session) {
-      console.log("No session found")
       return {
         isSuccess: false,
         message: "Not authenticated"
@@ -48,12 +47,10 @@ export async function getSimilarPatentsAction(
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
     if (!apiUrl) {
-      console.log("API URL not configured")
       throw new Error("API URL not configured")
     }
 
     const url = new URL(`/patents/${id}/similar`, apiUrl)
-    console.log("Fetching from URL:", url.toString())
 
     const response = await fetch(url.toString(), {
       method: "GET",
@@ -63,15 +60,13 @@ export async function getSimilarPatentsAction(
       }
     })
 
-    console.log("Response status:", response.status)
+
     
     if (!response.ok) {
-      console.log("Response not OK:", await response.text())
       throw new Error("Failed to get similar patents")
     }
 
     const data = await response.json()
-    console.log("Response data:", JSON.stringify(data, null, 2))
 
     return {
       isSuccess: true,

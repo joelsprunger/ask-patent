@@ -8,6 +8,7 @@ import rehypeKatex from "rehype-katex"
 import remarkMath from "remark-math"
 import "katex/dist/katex.min.css"
 import { CopyButton } from "@/components/ui/copy-button"
+import { SearchButton } from "@/components/ui/search-button"
 
 interface ChatMessagesProps {
   messages: ChatMessage[]
@@ -34,11 +35,18 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
             )}
           >
             {message.role === "assistant" && (
-              <CopyButton
-                text={message.content}
-                className="absolute -top-2 -right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                iconSize={4}
-              />
+              <>
+                <SearchButton
+                  text={message.content}
+                  className="absolute -top-2 -right-10 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                  iconSize={4}
+                />
+                <CopyButton
+                  text={message.content}
+                  className="absolute -top-2 -right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                  iconSize={4}
+                />
+              </>
             )}
             <div className="prose prose-sm dark:prose-invert">
               <Markdown

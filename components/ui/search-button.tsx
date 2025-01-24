@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
-  TooltipTrigger
+  TooltipTrigger,
+  TooltipProvider
 } from "@/components/ui/tooltip"
-import { searchPatentsAction } from "@/actions/search-actions"
+import { useRouter } from "next/navigation"
+import { useSearch } from "@/lib/providers/search-provider"
 
 interface SearchButtonProps {
   text: string
@@ -22,35 +24,35 @@ export function SearchButton({
   iconSize = 3,
   section
 }: SearchButtonProps) {
-  const handleSearch = async () => {
-    try {
-      const { isSuccess, data } = await searchPatentsAction(text, 10, section)
+  const router = useRouter()
+  const { setSearchQuery, setSearchSection } = useSearch()
 
-      if (isSuccess && data) {
-        // Handle the search results directly
-        console.log("Search results:", data)
-        // You can update UI state here or handle the results as needed
-      }
-    } catch (error) {
-      console.error("Search failed:", error)
-    }
+  const handleSearch = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+
+    setSearchQuery(text)
+    setSearchSection(section)
+    router.push("/search")
   }
 
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={className}
-          onClick={handleSearch}
-        >
-          <Search className={`h-${iconSize} w-${iconSize}`} />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>
-        <p>Find patents similar to this text</p>
-      </TooltipContent>
-    </Tooltip>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={className}
+            onClick={handleSearch}
+          >
+            <Search className={`h-${iconSize} w-${iconSize}`} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Find patents similar to this text</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }

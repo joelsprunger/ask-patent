@@ -24,7 +24,6 @@ export async function summarizeTextAction(
     if (!apiUrl) {
       throw new Error("API URL not configured")
     }
-    console.log("input_text", text)
     const url = new URL("/utils/summarize", apiUrl)
     url.searchParams.append("input_text", text)
     url.searchParams.append("n_words", nWords.toString())
@@ -42,9 +41,6 @@ export async function summarizeTextAction(
     }
 
     const data = await response.json()
-    
-    // Log the response to debug
-    console.log("[Summarize Text] Response:", data)
 
     // Access summary from data.data.summary
     return {

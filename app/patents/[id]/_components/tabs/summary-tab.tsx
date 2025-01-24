@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/tooltip"
 import { Components } from "react-markdown"
 import { CopyButton } from "@/components/ui/copy-button"
+import { SearchButton } from "@/components/ui/search-button"
 
 interface SummaryTabProps {
   patentId: string
@@ -141,12 +142,17 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
           <div className="absolute right-4 top-4 z-10 flex gap-2">
             {summary && (
               <>
+                <SearchButton
+                  text={summary}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  iconSize={4}
+                  section={section}
+                />
                 <CopyButton
                   text={summary}
                   className="opacity-0 group-hover:opacity-100 transition-opacity"
                   iconSize={4}
                 />
-
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
