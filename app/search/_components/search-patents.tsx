@@ -36,13 +36,14 @@ export default function SearchPatents() {
     setIsLoading(true)
     try {
       const result = await searchPatentsAction(query)
+      console.log("Search result:", result)
       if (result.isSuccess && result.data) {
-        setPatents(result.data.data)
+        setPatents(result.data)
         // Cache the results
         localStorage.setItem(
           CACHE_KEY,
           JSON.stringify({
-            data: result.data.data,
+            data: result.data,
             timestamp: Date.now()
           })
         )
@@ -51,7 +52,7 @@ export default function SearchPatents() {
       setIsLoading(false)
     }
   }
-
+  console.log("Patents:", patents)
   return (
     <div>
       <form onSubmit={handleSearch} className="flex gap-2 mb-8">
@@ -69,9 +70,10 @@ export default function SearchPatents() {
       </form>
 
       <div className="space-y-4">
-        {patents.map((patent, index) => (
-          <PatentCard key={patent.id} patent={patent} index={index} />
-        ))}
+        {patents &&
+          patents.map((patent, index) => (
+            <PatentCard key={patent.id} patent={patent} index={index} />
+          ))}
       </div>
     </div>
   )
