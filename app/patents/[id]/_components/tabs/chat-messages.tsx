@@ -7,6 +7,7 @@ import Markdown from "react-markdown"
 import rehypeKatex from "rehype-katex"
 import remarkMath from "remark-math"
 import "katex/dist/katex.min.css"
+import { CopyButton } from "@/components/ui/copy-button"
 
 interface ChatMessagesProps {
   messages: ChatMessage[]
@@ -26,12 +27,19 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
         >
           <div
             className={cn(
-              "rounded-lg px-4 py-2 max-w-[80%]",
+              "rounded-lg px-4 py-2 max-w-[80%] relative group",
               message.role === "user"
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted"
             )}
           >
+            {message.role === "assistant" && (
+              <CopyButton
+                text={message.content}
+                className="absolute -top-2 -right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                iconSize={4}
+              />
+            )}
             <div className="prose prose-sm dark:prose-invert">
               <Markdown
                 remarkPlugins={[remarkMath]}

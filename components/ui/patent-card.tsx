@@ -5,9 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Copy, Check } from "lucide-react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { CopyButton } from "@/components/ui/copy-button"
 
 interface PatentCardProps {
   patent: Patent
@@ -22,18 +20,9 @@ export function PatentCard({
   index = 0,
   animate = true
 }: PatentCardProps) {
-  const [copied, setCopied] = useState(false)
   const authorString = patent.authors
     ? patent.authors.join(" ").replace(/\s+/g, " ").trim()
     : ""
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.preventDefault() // Prevent navigation when used as a link
-    const textToCopy = patent.abstract || "No abstract available"
-    await navigator.clipboard.writeText(textToCopy)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   const content = (
     <Card className="w-full mb-4 bg-zinc-900 border-zinc-800 hover:border-zinc-700 hover:shadow-lg transition-all">
@@ -60,18 +49,11 @@ export function PatentCard({
               {patent.abstract || "No abstract available"}
             </p>
           </ScrollArea>
-          <Button
-            variant="ghost"
-            size="icon"
+          <CopyButton
+            text={patent.abstract || "No abstract available"}
             className="absolute top-2 right-2 h-8 w-8 hover:bg-zinc-800 opacity-0 group-hover/abstract:opacity-100 transition-opacity"
-            onClick={handleCopy}
-          >
-            {copied ? (
-              <Check className="h-4 w-4 text-green-500" />
-            ) : (
-              <Copy className="h-4 w-4 text-zinc-400" />
-            )}
-          </Button>
+            iconSize={4}
+          />
         </div>
       </CardContent>
     </Card>

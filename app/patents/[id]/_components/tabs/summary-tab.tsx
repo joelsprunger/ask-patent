@@ -12,7 +12,7 @@ import {
 import { PatentSection } from "@/types/patent-types"
 import { getPatentSummaryAction } from "@/actions/patents-actions"
 import { getPatentSection } from "@/actions/supabase-actions"
-import { Loader2 } from "lucide-react"
+import { Loader2, RefreshCw } from "lucide-react"
 import Markdown from "react-markdown"
 import rehypeKatex from "rehype-katex"
 import remarkMath from "remark-math"
@@ -23,9 +23,8 @@ import {
   TooltipContent,
   TooltipTrigger
 } from "@/components/ui/tooltip"
-import { RefreshCw } from "lucide-react"
 import { Components } from "react-markdown"
-import { Copy, Check } from "lucide-react"
+import { CopyButton } from "@/components/ui/copy-button"
 
 interface SummaryTabProps {
   patentId: string
@@ -51,7 +50,6 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
   const [sectionText, setSectionText] = useState<string>("")
   const [summary, setSummary] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
-  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     const fetchSection = async () => {
@@ -94,12 +92,6 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(summary)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   return (
@@ -149,25 +141,11 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
           <div className="absolute right-4 top-4 z-10 flex gap-2">
             {summary && (
               <>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={handleCopy}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    >
-                      {copied ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Copy summary</p>
-                  </TooltipContent>
-                </Tooltip>
+                <CopyButton
+                  text={summary}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  iconSize={4}
+                />
 
                 <Tooltip>
                   <TooltipTrigger asChild>
