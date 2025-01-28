@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(data.session?.user ?? null)
       setIsLoggedIn(!!data.session)
     } catch (error) {
-      // Error handling preserved but without console.error
+      console.error("Error checking session:", error)
     } finally {
       setIsLoading(false)
     }
@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+    } = supabase.auth.onAuthStateChange(async event => {
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
         await checkSession()
       } else if (event === "SIGNED_OUT") {

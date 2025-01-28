@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/providers/auth-provider"
 export default function NavBar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { isLoggedIn, signOut, isLoading } = useAuth()
+  const { isLoggedIn, signOut } = useAuth()
 
   const links = [
     {
