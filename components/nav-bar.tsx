@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Compass, LogIn, LogOut } from "lucide-react"
 import { useAuth } from "@/lib/providers/auth-provider"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function NavBar() {
   const pathname = usePathname()
@@ -81,14 +82,17 @@ export default function NavBar() {
           </div>
         </div>
 
-        <Button
-          variant="ghost"
-          className="flex items-center gap-2"
-          onClick={authButton.action}
-        >
-          <authButton.icon className="h-5 w-5" />
-          <span className="hidden md:inline">{authButton.text}</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Button
+            variant="ghost"
+            className="flex items-center gap-2"
+            onClick={authButton.action}
+          >
+            <authButton.icon className="h-5 w-5" />
+            <span className="hidden md:inline">{authButton.text}</span>
+          </Button>
+        </div>
       </div>
     </nav>
   )
