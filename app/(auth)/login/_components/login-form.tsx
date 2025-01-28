@@ -5,9 +5,11 @@ import { Input } from "@/components/ui/input"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { loginAction } from "@/actions/auth/login-actions"
+import { useAuth } from "@/lib/providers/auth-provider"
 
 export default function LoginForm() {
   const router = useRouter()
+  const { checkSession } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -25,6 +27,9 @@ export default function LoginForm() {
       setLoading(false)
       return
     }
+
+    // Immediately check session after successful login
+    await checkSession()
 
     router.push("/")
     router.refresh()
