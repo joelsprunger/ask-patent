@@ -98,15 +98,15 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
   return (
     <div className="grid grid-cols-2 h-full">
       <div className="flex flex-col">
-        <div className="p-4 border-b border-gray-700">
+        <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
           <Select
             value={section}
             onValueChange={value => setSection(value as PatentSection)}
           >
-            <SelectTrigger className="w-[300px] text-xl font-semibold bg-black text-white border border-gray-700">
+            <SelectTrigger className="w-[300px] text-xl font-semibold">
               <SelectValue placeholder="Select section" />
             </SelectTrigger>
-            <SelectContent className="bg-black text-white border border-gray-700">
+            <SelectContent>
               <SelectItem value="abstract">Abstract</SelectItem>
               <SelectItem value="background">Background</SelectItem>
               <SelectItem value="summary">Summary</SelectItem>
@@ -120,7 +120,7 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
           </Select>
         </div>
 
-        <div className="prose prose-invert max-w-none overflow-auto max-h-[calc(100vh-250px)] p-4">
+        <div className="prose dark:prose-invert max-w-none overflow-auto max-h-[calc(100vh-250px)] p-4">
           {sectionText ? (
             <Markdown
               remarkPlugins={[remarkMath]}
@@ -130,14 +130,14 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
               {sectionText}
             </Markdown>
           ) : (
-            <div className="text-center text-muted-foreground">
+            <div className="text-center text-zinc-500 dark:text-zinc-400">
               No content available for this section
             </div>
           )}
         </div>
       </div>
 
-      <div className="border-l border-gray-700 relative group">
+      <div className="border-l border-zinc-200 dark:border-zinc-800 relative group">
         {!isLoading && (
           <div className="absolute right-4 top-4 z-10 flex gap-2">
             {summary && (
