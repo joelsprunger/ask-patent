@@ -4,6 +4,7 @@ import { createServerSupabaseClient } from "@/lib/supabase/server"
 import { ActionState } from "@/types"
 import { Session } from "@supabase/supabase-js"
 import { revalidatePath } from "next/cache"
+import { LocalStorage } from "@/lib/local-storage"
 
 interface LoginData {
   email: string
@@ -26,6 +27,12 @@ export async function loginAction(
         isSuccess: false,
         message: error.message
       }
+    }
+
+    // Set flag for regular login and reset anonymous count
+    if (typeof window !== "undefined") {
+      LocalStorage.setHasLoggedIn()
+      LocalStorage.resetAnonymousRequests()
     }
 
     revalidatePath("/", "layout")
