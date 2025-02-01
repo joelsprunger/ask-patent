@@ -23,8 +23,13 @@ export const LocalStorage = {
 
   incrementAnonymousRequests: () => {
     try {
-      const count = Number(localStorage.getItem(STORAGE_KEYS.ANONYMOUS_REQUEST_COUNT) || "0")
-      localStorage.setItem(STORAGE_KEYS.ANONYMOUS_REQUEST_COUNT, String(count + 1))
+      const count = Number(
+        localStorage.getItem(STORAGE_KEYS.ANONYMOUS_REQUEST_COUNT) || "0"
+      )
+      localStorage.setItem(
+        STORAGE_KEYS.ANONYMOUS_REQUEST_COUNT,
+        String(count + 1)
+      )
       return count + 1
     } catch (e) {
       console.error("Error with localStorage:", e)
@@ -42,10 +47,22 @@ export const LocalStorage = {
 
   getAnonymousRequestCount: () => {
     try {
-      return Number(localStorage.getItem(STORAGE_KEYS.ANONYMOUS_REQUEST_COUNT) || "0")
+      return Number(
+        localStorage.getItem(STORAGE_KEYS.ANONYMOUS_REQUEST_COUNT) || "0"
+      )
     } catch (e) {
       console.error("Error with localStorage:", e)
       return 0
     }
+  },
+
+  getAnonymousAIRequestCount: () => {
+    return parseInt(localStorage.getItem("anonymousAIRequestCount") || "0")
+  },
+
+  incrementAnonymousAIRequests: () => {
+    const count = LocalStorage.getAnonymousAIRequestCount()
+    localStorage.setItem("anonymousAIRequestCount", (count + 1).toString())
+    return count + 1
   }
-} 
+}

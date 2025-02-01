@@ -26,6 +26,7 @@ import {
 import { Components } from "react-markdown"
 import { CopyButton } from "@/components/ui/copy-button"
 import { SearchButton } from "@/components/ui/search-button"
+import { useIncrementAIRequest } from "@/lib/providers/auth-provider"
 
 interface SummaryTabProps {
   patentId: string
@@ -51,6 +52,7 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
   const [sectionText, setSectionText] = useState<string>("")
   const [summary, setSummary] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
+  const incrementAIRequest = useIncrementAIRequest()
 
   useEffect(() => {
     const fetchSection = async () => {
@@ -83,6 +85,7 @@ export function SummaryTab({ patentId }: SummaryTabProps) {
   async function handleGenerateSummary() {
     setIsLoading(true)
     try {
+      incrementAIRequest()
       const response = await getPatentSummaryAction(patentId, section)
       if (response.isSuccess && response.data) {
         setSummary(response.data)
