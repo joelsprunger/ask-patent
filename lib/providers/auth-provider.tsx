@@ -36,7 +36,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const [isAnonymous, setIsAnonymous] = useState(false)
-  const [anonymousRequestCount, setAnonymousRequestCount] = useState(0)
+  const [anonymousRequestCount] = useState(0)
   const MAX_ANONYMOUS_REQUESTS = 5
 
   const checkSession = async () => {
@@ -71,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(data.session)
         setUser(data.session.user)
         setIsLoggedIn(true)
-        setIsAnonymous(!!data.session.user?.is_anonymous)
+        setIsAnonymous(data.session?.user?.is_anonymous ?? false)
 
         // Track anonymous requests if needed
         if (data.session.user?.is_anonymous) {
