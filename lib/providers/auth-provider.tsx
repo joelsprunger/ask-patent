@@ -96,47 +96,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const anonymousCount = LocalStorage.getAnonymousRequestCount()
       const anonymousAICount = LocalStorage.getAnonymousAIRequestCount()
 
-      // First check if we should prevent anonymous login
-      if (
+      // Check if we've exceeded anonymous limits
+      const isAnonymousLimitReached =
         anonymousAICount >= MAX_ANONYMOUS_AI_REQUESTS ||
         anonymousCount >= MAX_ANONYMOUS_REQUESTS
-      ) {
-        // If there's a session and it's anonymous, sign out
-        if (data.session?.user?.is_anonymous) {
-          await signOut()
-        }
-        setSession(null)
-        setUser(null)
-        setIsLoggedIn(false)
-        setIsAnonymous(false)
-        return
-      }
 
-      // If we have a session, update state
+      // Handle existing session
       if (data.session) {
+        const isAnon = data.session?.user?.is_anonymous ?? false
+
+        // Sign out if anonymous and limits reached
+        if (isAnon && isAnonymousLimitReached) {
+          await signOut()
+          return
+        }
+
+        // Update session state
         setSession(data.session)
         setUser(data.session.user)
         setIsLoggedIn(true)
-        setIsAnonymous(data.session?.user?.is_anonymous ?? false)
-        // Track anonymous requests if needed
-        if (data.session.user?.is_anonymous) {
+        setIsAnonymous(isAnon)
+
+        // Increment anonymous requests if needed
+        if (isAnon) {
           const count = LocalStorage.incrementAnonymousRequests()
           if (count >= MAX_ANONYMOUS_REQUESTS) {
             await signOut()
-            return
           }
         }
         return
       }
 
-      // Only try anonymous login if:
-      // 1. No session
-      // 2. Never logged in
-      // 3. Under request limit
-      // 4. Not on a public route
-      if (!hasLoggedIn && anonymousCount < MAX_ANONYMOUS_REQUESTS) {
+      // Attempt anonymous login if eligible
+      if (!hasLoggedIn && !isAnonymousLimitReached) {
         const { data: anonData, error: anonError } =
           await supabase.auth.signInAnonymously()
+
         if (!anonError && anonData.session) {
           setSession(anonData.session)
           setUser(anonData.session.user)
@@ -147,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // If we get here, no session was established
+      // No session established
       setSession(null)
       setUser(null)
       setIsLoggedIn(false)
