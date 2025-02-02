@@ -29,12 +29,6 @@ export async function loginAction(
       }
     }
 
-    // Set flag for regular login and reset anonymous count
-    if (typeof window !== "undefined") {
-      LocalStorage.setHasLoggedIn()
-      LocalStorage.resetAnonymousRequests()
-    }
-
     revalidatePath("/", "layout")
     return {
       isSuccess: true,
