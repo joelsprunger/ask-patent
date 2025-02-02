@@ -13,6 +13,7 @@ import { useLocalStorage } from "@/lib/hooks/use-local-storage"
 import { v4 as uuidv4 } from "uuid"
 import { summarizeTextAction } from "@/actions/utils-actions"
 import { getSuggestedQuestionsAction } from "@/actions/patents-actions"
+import { useIncrementAIRequest } from "@/lib/providers/auth-provider"
 
 interface AskPatentTabProps {
   patentId: string
@@ -25,17 +26,19 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
   const [currentChat, setCurrentChat] = useState<Chat | null>(null)
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const incrementAIRequest = useIncrementAIRequest()
 
   // Add effect to fetch suggested questions
   useEffect(() => {
     async function fetchSuggestedQuestions() {
       const response = await getSuggestedQuestionsAction(patentId)
+      incrementAIRequest()
       if (response.isSuccess && response.data) {
         setSuggestedQuestions(response.data)
       }
     }
     fetchSuggestedQuestions()
-  }, [patentId])
+  }, [patentId, incrementAIRequest])
 
   // Create or get existing chat
   useEffect(() => {
@@ -90,35 +93,32 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
     }
   }
 
-  async function handleSubmit() {
-    if (!input.trim() || !currentChat) return
+  // Helper function to handle chat updates
+  const updateChat = (chat: Chat) => {
+    setCurrentChat(chat)
+    setChats(prev => prev.map(c => (c.id === chat.id ? chat : c)))
+  }
 
-    const isNewChat = currentChat.messages.length === 0
+  // Consolidated function to handle asking questions
+  async function handleAskQuestion(question: string, chat: Chat) {
     const userMessage: ChatMessage = {
       id: uuidv4(),
       role: "user",
-      content: input,
+      content: question,
       timestamp: Date.now()
     }
 
-    setIsLoading(true)
+    // Update chat with user message
+    const updatedChat = {
+      ...chat,
+      messages: [...chat.messages, userMessage],
+      lastMessageAt: Date.now()
+    }
+    updateChat(updatedChat)
 
     try {
-      // Update with user message first
-      const updatedChat = {
-        ...currentChat,
-        messages: [...currentChat.messages, userMessage],
-        lastMessageAt: Date.now()
-      }
-      setCurrentChat(updatedChat)
-      setChats(prev =>
-        prev.map(chat => (chat.id === currentChat.id ? updatedChat : chat))
-      )
-
-      setInput("")
-
-      // Get the answer
-      const response = await askPatentQuestionAction(patentId, input)
+      const response = await askPatentQuestionAction(patentId, question)
+      incrementAIRequest()
 
       if (response.isSuccess && response.data) {
         const assistantMessage: ChatMessage = {
@@ -133,24 +133,62 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
           messages: [...updatedChat.messages, assistantMessage],
           lastMessageAt: Date.now()
         }
+        updateChat(chatWithAnswer)
 
-        setCurrentChat(chatWithAnswer)
-        setChats(prev =>
-          prev.map(chat => (chat.id === currentChat.id ? chatWithAnswer : chat))
-        )
-
-        // Generate title after getting the answer for new chats
-        if (isNewChat) {
+        // Generate title for new chats
+        if (chat.messages.length === 0) {
           await generateTitle(
-            currentChat.id,
-            input,
+            chat.id,
+            question,
             response.data.answer,
             chatWithAnswer
           )
         }
       }
     } catch (error) {
-      console.error("Error in handleSubmit:", error)
+      console.error("Error asking question:", error)
+    }
+  }
+
+  // Handler for user submitted questions
+  async function handleSubmit() {
+    if (!input.trim() || !currentChat || isLoading) return
+
+    setIsLoading(true)
+    try {
+      await handleAskQuestion(input, currentChat)
+      setInput("") // Clear input after successful submission
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Handler for suggested questions
+  async function handleSuggestedQuestion(question: string) {
+    if (isLoading) return
+
+    // Create new chat if none exists
+    const newChat: Chat = {
+      id: uuidv4(),
+      patentId,
+      title: "New Chat",
+      messages: [],
+      lastMessageAt: Date.now(),
+      createdAt: Date.now()
+    }
+
+    // Use current chat if it exists, otherwise use new chat
+    const chatToUse = currentChat || newChat
+
+    // If we're using a new chat, add it to the list
+    if (!currentChat) {
+      setCurrentChat(chatToUse)
+      setChats(prev => [...prev, chatToUse])
+    }
+
+    setIsLoading(true)
+    try {
+      await handleAskQuestion(question, chatToUse)
     } finally {
       setIsLoading(false)
     }
@@ -232,88 +270,7 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
                       key={index}
                       variant="outline"
                       className="h-auto min-h-[60px] whitespace-normal p-4 text-left text-sm"
-                      onClick={async () => {
-                        // Create new chat if none exists
-                        let chatToUse = currentChat
-                        if (!chatToUse) {
-                          chatToUse = {
-                            id: uuidv4(),
-                            patentId,
-                            title: "New Chat",
-                            messages: [],
-                            lastMessageAt: Date.now(),
-                            createdAt: Date.now()
-                          }
-                          setCurrentChat(chatToUse)
-                          setChats([...chats, chatToUse])
-                        }
-
-                        setIsLoading(true)
-
-                        try {
-                          const userMessage: ChatMessage = {
-                            id: uuidv4(),
-                            role: "user",
-                            content: question,
-                            timestamp: Date.now()
-                          }
-
-                          const updatedChat = {
-                            ...chatToUse,
-                            messages: [...chatToUse.messages, userMessage],
-                            lastMessageAt: Date.now()
-                          }
-                          setCurrentChat(updatedChat)
-                          setChats(prev =>
-                            prev.map(chat =>
-                              chat.id === chatToUse.id ? updatedChat : chat
-                            )
-                          )
-
-                          const response = await askPatentQuestionAction(
-                            patentId,
-                            question
-                          )
-
-                          if (response.isSuccess && response.data) {
-                            const assistantMessage: ChatMessage = {
-                              id: uuidv4(),
-                              role: "assistant",
-                              content: response.data.answer,
-                              timestamp: Date.now()
-                            }
-
-                            const chatWithAnswer = {
-                              ...updatedChat,
-                              messages: [
-                                ...updatedChat.messages,
-                                assistantMessage
-                              ],
-                              lastMessageAt: Date.now()
-                            }
-
-                            setCurrentChat(chatWithAnswer)
-                            setChats(prev =>
-                              prev.map(chat =>
-                                chat.id === chatToUse.id ? chatWithAnswer : chat
-                              )
-                            )
-
-                            if (chatToUse.messages.length === 0) {
-                              await generateTitle(
-                                chatToUse.id,
-                                question,
-                                response.data.answer,
-                                chatWithAnswer
-                              )
-                            }
-                          }
-                        } catch (error) {
-                          console.error("Error in handleSubmit:", error)
-                        } finally {
-                          setIsLoading(false)
-                        }
-                      }}
+                      onClick={() => handleSuggestedQuestion(question)}
                       disabled={isLoading}
                     >
                       {question}
