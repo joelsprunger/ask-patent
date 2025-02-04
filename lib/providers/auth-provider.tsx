@@ -120,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             await signOut()
             return
           }
-          incrementAnonymousAIRequests()
+          LocalStorage.incrementAnonymousRequests()
         }
 
         // Update session state
