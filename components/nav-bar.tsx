@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 export default function NavBar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { isLoggedIn, signOut } = useAuth()
+  const { isLoggedIn, signOut, isAnonymous } = useAuth()
 
   const links = [
     {
@@ -23,10 +23,18 @@ export default function NavBar() {
 
   const getAuthButton = () => {
     if (isLoggedIn) {
-      return {
-        text: "Logout",
-        icon: LogOut,
-        action: signOut
+      if (isAnonymous) {
+        return {
+          text: "Login",
+          icon: LogIn,
+          action: () => router.push("/login")
+        }
+      } else {
+        return {
+          text: "Logout",
+          icon: LogOut,
+          action: signOut
+        }
       }
     }
 

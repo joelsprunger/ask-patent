@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { loginAction } from "@/actions/auth/login-actions"
 import { useAuth } from "@/lib/providers/auth-provider"
-
+import { LocalStorage } from "@/lib/local-storage"
 export default function LoginForm() {
   const router = useRouter()
   const { checkSession } = useAuth()
@@ -27,7 +27,7 @@ export default function LoginForm() {
       setLoading(false)
       return
     }
-
+    LocalStorage.setHasLoggedIn()
     // Immediately check session after successful login
     await checkSession()
 
