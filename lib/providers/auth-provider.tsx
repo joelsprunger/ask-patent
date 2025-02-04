@@ -51,6 +51,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const MAX_ANONYMOUS_REQUESTS = 50
   const MAX_ANONYMOUS_AI_REQUESTS = 10
 
+  const publicRoutes = ["/login", "/signup", "/reset-password"]
+  const isPublicRoute = publicRoutes.some(route => pathname.startsWith(route))
+
   const signOut = async () => {
     const { error } = await supabase.auth.signOut()
     if (error) return
@@ -101,14 +104,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         anonymousAICount >= MAX_ANONYMOUS_AI_REQUESTS ||
         anonymousCount >= MAX_ANONYMOUS_REQUESTS
 
+      // Set cookie for middleware to check
+      if (isAnonymousLimitReached) {
+        console.log("setting isAnonymousLimitReached cookie")
+        document.cookie = `isAnonymousLimitReached=true; path=/; max-age=31536000` // 1 year expiry
+      }
+
       // Handle existing session
       if (data.session) {
         const isAnon = data.session?.user?.is_anonymous ?? false
 
         // Sign out if anonymous and limits reached
-        if (isAnon && isAnonymousLimitReached) {
-          await signOut()
-          return
+        if (isAnon) {
+          if (isAnonymousLimitReached) {
+            await signOut()
+            return
+          }
+          incrementAnonymousAIRequests()
         }
 
         // Update session state
@@ -117,18 +129,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoggedIn(true)
         setIsAnonymous(isAnon)
 
-        // Increment anonymous requests if needed
-        if (isAnon) {
-          const count = LocalStorage.incrementAnonymousRequests()
-          if (count >= MAX_ANONYMOUS_REQUESTS) {
-            await signOut()
-          }
-        }
         return
       }
 
       // Attempt anonymous login if eligible
       if (!hasLoggedIn && !isAnonymousLimitReached) {
+        console.log("Attempting anonymous login")
+        console.log("isPublicRoute", isPublicRoute)
+        console.log("Route", pathname)
         const { data: anonData, error: anonError } =
           await supabase.auth.signInAnonymously()
 

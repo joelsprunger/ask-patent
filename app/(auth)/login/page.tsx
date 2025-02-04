@@ -13,10 +13,15 @@ export default async function LoginPage({
 }) {
   const supabase = await createServerSupabaseClient()
   const {
-    data: { session }
-  } = await supabase.auth.getSession()
+    data: { user }
+  } = await supabase.auth.getUser()
+  console.log("user", user)
 
-  if (session) {
+  const anonUser = user?.is_anonymous ?? false
+  console.log("anonUser", anonUser)
+  if (user && !anonUser) {
+    console.log("user here", user)
+    console.log("redirecting to home")
     redirect("/")
   }
 

@@ -11,9 +11,9 @@ export default async function AuthLayout({
     data: { session }
   } = await supabase.auth.getSession()
 
-  if (session) {
-    redirect("/")
-  }
+  // if (session) {
+  //   redirect("/")
+  // }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center py-2">
