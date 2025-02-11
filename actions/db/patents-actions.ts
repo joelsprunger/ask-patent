@@ -60,8 +60,6 @@ export async function getSimilarPatentsAction(
       }
     })
 
-
-    
     if (!response.ok) {
       throw new Error("Failed to get similar patents")
     }
@@ -79,4 +77,30 @@ export async function getSimilarPatentsAction(
   }
 }
 
+export async function getPaginatedPatentsAction(
+  page: number,
+  pageSize: number,
+  sortBy: string = "title",
+  sortOrder: "asc" | "desc" = "asc"
+): Promise<ActionState<Patent[]>> {
+  try {
+    const supabase = await createServerSupabaseClient()
 
+    const { data: patents, error } = await supabase
+      .from("patents")
+      .select("patent_number, title, authors, abstract")
+      .order(sortBy, { ascending: sortOrder === "asc" })
+      .range((page - 1) * pageSize, page * pageSize - 1)
+
+    if (error) throw error
+
+    return {
+      isSuccess: true,
+      message: "Patents retrieved successfully",
+      data: patents
+    }
+  } catch (error) {
+    console.error("Error getting paginated patents:", error)
+    return { isSuccess: false, message: "Failed to get paginated patents" }
+  }
+}
