@@ -4,19 +4,23 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Compass, LogIn, LogOut } from "lucide-react"
+import { Compass, LogIn, LogOut, Search } from "lucide-react"
 import { useAuth } from "@/lib/providers/auth-provider"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useState } from "react"
+import { useSearch } from "@/lib/providers/search-provider"
 
 export default function NavBar() {
   const pathname = usePathname()
   const router = useRouter()
   const { isLoggedIn, signOut, isAnonymous } = useAuth()
+  const [searchInput, setSearchInput] = useState("")
+  const { setSearchQuery, executeSearch } = useSearch()
 
   const links = [
     {
-      name: "Search",
-      href: "/search",
+      name: "Browse",
+      href: "/browse",
       icon: Compass
     }
   ]
@@ -63,6 +67,15 @@ export default function NavBar() {
 
   const authButton = getAuthButton()
 
+  const handleSearchSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchInput.trim()) {
+      setSearchQuery(searchInput)
+      await executeSearch()
+      router.push("/search")
+    }
+  }
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-sm p-4 md:top-0 md:bottom-auto md:border-b md:border-t-0">
       <div className="mx-auto flex max-w-screen-xl items-center justify-between px-4">
@@ -91,6 +104,23 @@ export default function NavBar() {
         </div>
 
         <div className="flex items-center gap-2">
+          {isLoggedIn && !isAnonymous && (
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex items-center gap-2"
+            >
+              <input
+                type="text"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                placeholder="Search..."
+                className="border rounded px-2 py-1"
+              />
+              <Button variant="ghost" size="icon" type="submit">
+                <Search className="h-5 w-5" />
+              </Button>
+            </form>
+          )}
           <ThemeToggle />
           <Button
             variant="ghost"

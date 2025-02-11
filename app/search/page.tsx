@@ -19,6 +19,11 @@ export default function SearchPage() {
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-8">Patent Search</h1>
 
+      <div className="mb-4">
+        <label className="text-sm font-medium">Search Text:</label>
+        <p className="text-sm">{searchQuery}</p>
+      </div>
+
       <Suspense fallback={<SearchSkeleton />}>
         <SearchPatents />
       </Suspense>
