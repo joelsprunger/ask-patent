@@ -88,7 +88,7 @@ export async function getPaginatedPatentsAction(
 
     const { data: patents, error } = await supabase
       .from("patents")
-      .select("patent_number, title, authors, abstract")
+      .select("id, patent_number, title, authors, abstract")
       .order(sortBy, { ascending: sortOrder === "asc" })
       .range((page - 1) * pageSize, page * pageSize - 1)
 

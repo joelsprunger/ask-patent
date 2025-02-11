@@ -1,3 +1,5 @@
+"use client"
+
 import "@/app/globals.css"
 import { Providers } from "@/components/utilities/providers"
 import { Inter } from "next/font/google"
@@ -25,12 +27,12 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProvider>
-            <NavBar />
-            <main className="mx-auto min-h-screen max-w-screen-xl px-4 pb-20 pt-4 md:pb-4 md:pt-20">
-              <SearchProvider>
+            <SearchProvider>
+              <NavBar />
+              <main className="mx-auto min-h-screen max-w-screen-xl px-4 pb-20 pt-4 md:pb-4 md:pt-20">
                 <Providers>{children}</Providers>
-              </SearchProvider>
-            </main>
+              </main>
+            </SearchProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

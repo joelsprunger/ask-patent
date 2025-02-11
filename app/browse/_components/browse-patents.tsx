@@ -1,8 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { getPaginatedPatentsAction } from "@/actions/db/patents-actions"
 import { Patent } from "@/types/patent-types"
+import Link from "next/link"
 
 interface Column {
   width: number
@@ -70,12 +72,45 @@ function useResizableColumns(initialColumns: Column[]) {
   return { columns, startResize }
 }
 
+function Pagination({
+  currentPage,
+  totalPages,
+  onPageChange
+}: {
+  currentPage: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}) {
+  const pages = []
+  for (let i = 1; i <= totalPages; i++) {
+    pages.push(i)
+  }
+
+  return (
+    <div className="flex justify-center space-x-2">
+      {pages.map(page => (
+        <button
+          key={page}
+          onClick={() => onPageChange(page)}
+          className={`px-2 py-1 ${
+            page === currentPage ? "bg-blue-500 text-white" : "bg-gray-200"
+          }`}
+        >
+          {page}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export default function BrowsePatents() {
   const [patents, setPatents] = useState<Patent[]>([])
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [sortBy, setSortBy] = useState("title")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const [totalPages, setTotalPages] = useState(1)
+  const router = useRouter()
 
   const { columns, startResize } = useResizableColumns([
     { width: 150, minWidth: 100 }, // Patent Number
@@ -93,14 +128,25 @@ export default function BrowsePatents() {
         sortOrder
       )
       if (isSuccess) {
-        setPatents(data)
+        setPatents(data || [])
+        setTotalPages(Math.ceil(data.length / pageSize))
       }
     }
     fetchPatents()
   }, [page, pageSize, sortBy, sortOrder])
 
+  const handleRowClick = (patentId: string) => {
+    router.push(`/patents/${patentId}`)
+  }
+
   return (
     <div className="overflow-x-auto">
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
+
       <div className="flex justify-between mb-4">
         <select
           value={pageSize}
@@ -159,10 +205,20 @@ export default function BrowsePatents() {
         </thead>
         <tbody>
           {patents.map(patent => (
-            <tr key={patent.patent_number}>
+            <tr
+              key={patent.patent_number}
+              onClick={() => handleRowClick(patent.id)}
+              className="cursor-pointer hover:bg-gray-100"
+            >
               {[
                 patent.patent_number,
-                patent.title,
+                <Link
+                  key={patent.id}
+                  href={`/patents/${patent.id}`}
+                  className="text-blue-500"
+                >
+                  {patent.title}
+                </Link>,
                 patent.authors?.join(", ") || "N/A",
                 patent.abstract || "N/A"
               ].map((content, i) => (
@@ -185,6 +241,12 @@ export default function BrowsePatents() {
           ))}
         </tbody>
       </table>
+
+      <Pagination
+        currentPage={page}
+        totalPages={totalPages}
+        onPageChange={setPage}
+      />
 
       <div className="flex justify-between mt-4">
         <button
