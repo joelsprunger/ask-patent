@@ -2,7 +2,10 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { getPaginatedPatentsAction } from "@/actions/db/patents-actions"
+import {
+  getPaginatedPatentsAction,
+  getPatentsCountAction
+} from "@/actions/db/patents-actions"
 import { Patent } from "@/types/patent-types"
 import Link from "next/link"
 
@@ -46,9 +49,10 @@ function useResizableColumns(initialColumns: Column[]) {
         0
       )
 
-      // Adjust the next column to maintain the total width
-      if (currentColumn.current < prev.length - 1) {
-        const nextColumnIndex = currentColumn.current + 1
+      // Add null check before using currentColumn.current
+      const columnIndex = currentColumn.current
+      if (columnIndex !== null && columnIndex < prev.length - 1) {
+        const nextColumnIndex = columnIndex + 1
         const nextColumn = updatedColumns[nextColumnIndex]
         const adjustedNextWidth =
           nextColumn.width - (newTotalWidth - totalWidth)
@@ -81,26 +85,81 @@ function Pagination({
   totalPages: number
   onPageChange: (page: number) => void
 }) {
-  const pages = []
-  for (let i = 1; i <= totalPages; i++) {
-    pages.push(i)
+  const getPageNumbers = () => {
+    const pageNumbers = []
+    const maxMiddleButtons = 3
+    const halfMiddleButtons = Math.floor(maxMiddleButtons / 2)
+
+    let startPage = Math.max(1, currentPage - halfMiddleButtons)
+    const endPage = Math.min(totalPages, startPage + maxMiddleButtons - 1)
+
+    if (endPage - startPage + 1 < maxMiddleButtons) {
+      startPage = Math.max(1, endPage - maxMiddleButtons + 1)
+    }
+
+    if (startPage > 1) {
+      pageNumbers.push(1)
+      if (startPage > 2) pageNumbers.push("...")
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i)
+    }
+
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) pageNumbers.push("...")
+      pageNumbers.push(totalPages)
+    }
+
+    return pageNumbers
   }
 
   return (
-    <div className="flex justify-center space-x-2">
-      {pages.map(page => (
-        <button
-          key={page}
-          onClick={() => onPageChange(page)}
-          className={`px-2 py-1 ${
-            page === currentPage ? "bg-blue-500 text-white" : "bg-gray-200"
-          }`}
-        >
-          {page}
-        </button>
-      ))}
+    <div className="flex justify-center items-center gap-1">
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="px-3 py-2 rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+      >
+        ←
+      </button>
+
+      {getPageNumbers().map((page, index) =>
+        typeof page === "number" ? (
+          <button
+            key={index}
+            onClick={() => onPageChange(page)}
+            className={`px-3 py-2 rounded-md text-sm font-medium transition-colors border ${
+              page === currentPage
+                ? "border-blue-500 text-blue-500"
+                : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+            }`}
+          >
+            {page}
+          </button>
+        ) : (
+          <span key={index} className="px-2 py-2 text-muted-foreground">
+            {page}
+          </span>
+        )
+      )}
+
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="px-3 py-2 rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+      >
+        →
+      </button>
     </div>
   )
+}
+
+function toCamelCase(str: string) {
+  return str
+    .split(" ")
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(" ")
 }
 
 export default function BrowsePatents() {
@@ -108,7 +167,7 @@ export default function BrowsePatents() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [sortBy, setSortBy] = useState("title")
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const [sortOrder] = useState<"asc" | "desc">("asc")
   const [totalPages, setTotalPages] = useState(1)
   const router = useRouter()
 
@@ -120,6 +179,25 @@ export default function BrowsePatents() {
   ])
 
   useEffect(() => {
+    // Load total count from localStorage or fetch it
+    async function fetchTotalCount() {
+      const cachedCount = localStorage.getItem("patentsTotalCount")
+
+      if (cachedCount) {
+        setTotalPages(Math.ceil(parseInt(cachedCount) / pageSize))
+      } else {
+        const { data, isSuccess } = await getPatentsCountAction()
+        if (isSuccess && data) {
+          localStorage.setItem("patentsTotalCount", data.toString())
+          setTotalPages(Math.ceil(data / pageSize))
+        }
+      }
+    }
+
+    fetchTotalCount()
+  }, [pageSize])
+
+  useEffect(() => {
     async function fetchPatents() {
       const { data, isSuccess } = await getPaginatedPatentsAction(
         page,
@@ -127,13 +205,20 @@ export default function BrowsePatents() {
         sortBy,
         sortOrder
       )
-      if (isSuccess) {
-        setPatents(data || [])
-        setTotalPages(Math.ceil(data.length / pageSize))
+      if (isSuccess && data) {
+        setPatents(data)
       }
     }
     fetchPatents()
   }, [page, pageSize, sortBy, sortOrder])
+
+  // Update total pages when page size changes
+  useEffect(() => {
+    const cachedCount = localStorage.getItem("patentsTotalCount")
+    if (cachedCount) {
+      setTotalPages(Math.ceil(parseInt(cachedCount) / pageSize))
+    }
+  }, [pageSize])
 
   const handleRowClick = (patentId: string) => {
     router.push(`/patents/${patentId}`)
@@ -217,7 +302,7 @@ export default function BrowsePatents() {
                   href={`/patents/${patent.id}`}
                   className="text-blue-500"
                 >
-                  {patent.title}
+                  {toCamelCase(patent.title)}
                 </Link>,
                 patent.authors?.join(", ") || "N/A",
                 patent.abstract || "N/A"
@@ -251,13 +336,15 @@ export default function BrowsePatents() {
       <div className="flex justify-between mt-4">
         <button
           onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-          className="bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+          disabled={page === 1}
+          className="px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
         >
           Previous
         </button>
         <button
-          onClick={() => setPage(prev => prev + 1)}
-          className="bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+          onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+          disabled={page === totalPages}
+          className="px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
         >
           Next
         </button>
