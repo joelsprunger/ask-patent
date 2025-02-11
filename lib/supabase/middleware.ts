@@ -46,16 +46,18 @@ export async function updateSession(request: NextRequest) {
       request.nextUrl.pathname.startsWith(route)
     )
 
+    // Check if anonymous limits are reached from cookie
+    const isLimitReached =
+      request.cookies.get("isAnonymousLimitReached")?.value === "true"
+
+    // If on login page and not limit reached, allow access
+    if (request.nextUrl.pathname === "/login" && !isLimitReached) {
+      return response
+    }
+
     // If not logged in and not on a public route
     if (!user && !isPublicRoute) {
-      // Check if anonymous limits are reached from cookie
-      const isLimitReached =
-        request.cookies.get("isAnonymousLimitReached")?.value === "true"
-      console.log(
-        "isLimitReached middleware",
-        request.cookies.get("isAnonymousLimitReached")
-      )
-      // If previously logged in or limits reached, redirect to login with message
+      // If limits reached, redirect to login
       if (isLimitReached) {
         const redirectUrl = new URL(
           "/login?message=trial_limit_reached",
@@ -64,9 +66,8 @@ export async function updateSession(request: NextRequest) {
         return NextResponse.redirect(redirectUrl)
       }
 
-      // redirect to login
-      const redirectUrl = new URL("/login", request.url)
-      return NextResponse.redirect(redirectUrl)
+      // Otherwise, allow access (anonymous auth will happen client-side)
+      return response
     }
 
     return response
