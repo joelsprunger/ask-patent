@@ -104,21 +104,23 @@ export default function NavBar() {
         </div>
 
         <div className="flex items-center gap-2">
-          <form
-            onSubmit={handleSearchSubmit}
-            className="flex items-center gap-2"
-          >
-            <input
-              type="text"
-              value={searchInput}
-              onChange={e => setSearchInput(e.target.value)}
-              placeholder="Search..."
-              className="border rounded px-2 py-1"
-            />
-            <Button variant="ghost" size="icon" type="submit">
-              <Search className="h-5 w-5" />
-            </Button>
-          </form>
+          {isLoggedIn && !isAnonymous && (
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex items-center gap-2"
+            >
+              <input
+                type="text"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                placeholder="Search..."
+                className="border rounded px-2 py-1"
+              />
+              <Button variant="ghost" size="icon" type="submit">
+                <Search className="h-5 w-5" />
+              </Button>
+            </form>
+          )}
           <ThemeToggle />
           <Button
             variant="ghost"
