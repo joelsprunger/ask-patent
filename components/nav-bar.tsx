@@ -104,7 +104,7 @@ export default function NavBar() {
         </div>
 
         <div className="flex items-center gap-2">
-          {isLoggedIn && !isAnonymous && (
+          {isLoggedIn && (
             <form
               onSubmit={handleSearchSubmit}
               className="flex items-center gap-2"
