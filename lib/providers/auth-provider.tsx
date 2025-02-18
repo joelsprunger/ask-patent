@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) return
     setSession(null)
     setUser(null)
+    console.log("signing out: setting IsLoggedIn to false")
     setIsLoggedIn(false)
     setIsAnonymous(false)
 
@@ -96,38 +97,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const anonymousCount = LocalStorage.getAnonymousRequestCount()
       const anonymousAICount = LocalStorage.getAnonymousAIRequestCount()
 
-      // Check if we've exceeded anonymous limits
       const isAnonymousLimitReached =
         anonymousAICount >= MAX_ANONYMOUS_AI_REQUESTS ||
         anonymousCount >= MAX_ANONYMOUS_REQUESTS
 
-      // Set cookie for middleware to check
-      if (isAnonymousLimitReached) {
-        document.cookie = `isAnonymousLimitReached=true; path=/; max-age=31536000`
-      }
-
-      // Handle existing session
+      // Set states immediately based on session
       if (data.session) {
-        const isAnon = data.session?.user?.is_anonymous ?? false
+        const isAnon = Boolean(data.session?.user?.is_anonymous)
 
-        // Sign out if anonymous and limits reached
-        if (isAnon) {
-          if (isAnonymousLimitReached) {
-            await signOut()
-            return
-          }
-          LocalStorage.incrementAnonymousRequests()
-        }
-
-        // Update session state
+        // Update all related states atomically
         setSession(data.session)
         setUser(data.session.user)
         setIsLoggedIn(true)
         setIsAnonymous(isAnon)
+
+        if (isAnon && isAnonymousLimitReached) {
+          await signOut()
+          return
+        }
+
+        if (isAnon) {
+          LocalStorage.incrementAnonymousRequests()
+        }
+
         return
       }
 
-      // Attempt anonymous login if eligible
+      // Only attempt anonymous login if no previous login and limits not reached
       if (!hasLoggedIn && !isAnonymousLimitReached) {
         const { data: anonData, error: anonError } =
           await supabase.auth.signInAnonymously()
@@ -142,13 +138,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // No session established
+      // Clear states if no session
       setSession(null)
       setUser(null)
+      console.log("No session: setting IsLoggedIn to false")
       setIsLoggedIn(false)
       setIsAnonymous(false)
+      const loginPath = "/login"
+
+      router.push(loginPath)
+      router.refresh()
     } catch (error) {
       console.error("Error checking session:", error)
+      // Reset states on error
+      setSession(null)
+      setUser(null)
+      console.log("Error is being handled: setting IsLoggedIn to false")
+      setIsLoggedIn(false)
+      setIsAnonymous(false)
     } finally {
       setIsLoading(false)
     }
@@ -159,19 +166,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkSession()
   }, [pathname])
 
-  // Set up auth subscription
+  // Modify the auth subscription to be more explicit
   useEffect(() => {
     const {
       data: { subscription }
-    } = supabase.auth.onAuthStateChange(async event => {
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        await checkSession()
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN") {
+        const isAnon = Boolean(session?.user?.is_anonymous)
+        setSession(session)
+        setUser(session?.user ?? null)
+        setIsLoggedIn(true)
+        setIsAnonymous(isAnon)
       } else if (event === "SIGNED_OUT") {
         setSession(null)
         setUser(null)
+        console.log("Signed out event: setting IsLoggedIn to false")
         setIsLoggedIn(false)
+        setIsAnonymous(false)
       }
-
       router.refresh()
     })
 
@@ -179,17 +191,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       subscription.unsubscribe()
     }
   }, [router])
-
-  // Poll for session changes every 5 seconds when not logged in
-  useEffect(() => {
-    if (isLoggedIn) return
-
-    const interval = setInterval(checkSession, 5000)
-
-    return () => {
-      clearInterval(interval)
-    }
-  }, [isLoggedIn])
 
   return (
     <AuthContext.Provider

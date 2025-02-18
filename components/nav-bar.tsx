@@ -13,9 +13,13 @@ import { useSearch } from "@/lib/providers/search-provider"
 export default function NavBar() {
   const pathname = usePathname()
   const router = useRouter()
-  const { isLoggedIn, signOut, isAnonymous } = useAuth()
+  const { isLoggedIn, signOut, isAnonymous, isLoading } = useAuth()
   const [searchInput, setSearchInput] = useState("")
-  const { setSearchQuery, executeSearch } = useSearch()
+  const { setSearchQuery } = useSearch()
+
+  if (isLoading) {
+    return null
+  }
 
   const links = [
     {
@@ -26,19 +30,19 @@ export default function NavBar() {
   ]
 
   const getAuthButton = () => {
+    if (isLoggedIn && isAnonymous) {
+      return {
+        text: "Login",
+        icon: LogIn,
+        action: () => router.push("/login")
+      }
+    }
+
     if (isLoggedIn) {
-      if (isAnonymous) {
-        return {
-          text: "Login",
-          icon: LogIn,
-          action: () => router.push("/login")
-        }
-      } else {
-        return {
-          text: "Logout",
-          icon: LogOut,
-          action: signOut
-        }
+      return {
+        text: "Logout",
+        icon: LogOut,
+        action: signOut
       }
     }
 
@@ -70,8 +74,19 @@ export default function NavBar() {
   const handleSearchSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (searchInput.trim()) {
-      setSearchQuery(searchInput)
-      await executeSearch()
+      const query = searchInput.trim()
+      setSearchQuery(query)
+      setSearchInput("")
+      router.push("/search")
+    }
+  }
+
+  const handleSearchClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    if (searchInput.trim()) {
+      const query = searchInput.trim()
+      setSearchQuery(query)
+      setSearchInput("")
       router.push("/search")
     }
   }
@@ -116,7 +131,12 @@ export default function NavBar() {
                 placeholder="Search..."
                 className="border rounded px-2 py-1"
               />
-              <Button variant="ghost" size="icon" type="submit">
+              <Button
+                variant="ghost"
+                size="icon"
+                type="button"
+                onClick={handleSearchClick}
+              >
                 <Search className="h-5 w-5" />
               </Button>
             </form>
