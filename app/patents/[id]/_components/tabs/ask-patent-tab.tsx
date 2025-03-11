@@ -134,8 +134,6 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
     const url = new URL(`${apiPrefix}/patent-agent/chat`, apiUrl)
 
     try {
-      let fullResponse = ""
-
       await streamFromApi({
         url: url.toString(),
         method: "POST",
@@ -146,7 +144,6 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
         },
         onChunk: chunk => {
           setStreamingMessage(prev => prev + chunk)
-          fullResponse += chunk
         },
         onComplete: async completeResponse => {
           // Add the complete response as a message
