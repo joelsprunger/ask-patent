@@ -22,11 +22,12 @@ export async function getSimilarPatentsAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patents/${id}/similar`, apiUrl)
+    const url = new URL(`${apiPrefix}/patents/${id}/similar`, apiUrl)
 
     const response = await fetch(url.toString(), {
       method: "GET",
@@ -36,11 +37,14 @@ export async function getSimilarPatentsAction(
       }
     })
 
-    
     const responseData = await response.json()
 
     if (!response.ok) {
-      throw new Error(`Failed to get similar patents: ${responseData.message || 'Unknown error'}`)
+      throw new Error(
+        `Failed to get similar patents: ${
+          responseData.message || "Unknown error"
+        }`
+      )
     }
 
     return {
@@ -72,11 +76,12 @@ export async function getPatentSummaryAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patents/${id}/summarize`, apiUrl)
+    const url = new URL(`${apiPrefix}/patents/${id}/summarize`, apiUrl)
     url.searchParams.append("section", section)
 
     const response = await fetch(url.toString(), {
@@ -123,11 +128,12 @@ export async function askPatentQuestionAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patents/${patentId}/ask`, apiUrl)
+    const url = new URL(`${apiPrefix}/patents/${patentId}/ask`, apiUrl)
     url.searchParams.append("question", question)
     url.searchParams.append("k", k.toString())
 
@@ -177,11 +183,15 @@ export async function getSuggestedQuestionsAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patents/${patentId}/suggest_questions`, apiUrl)
+    const url = new URL(
+      `${apiPrefix}/patents/${patentId}/suggest_questions`,
+      apiUrl
+    )
     url.searchParams.append("n", n.toString())
     url.searchParams.append("section", section)
 
@@ -205,14 +215,123 @@ export async function getSuggestedQuestionsAction(
     }
   } catch (error) {
     console.error("Error getting suggested questions:", error)
-    return { 
-      isSuccess: false, 
+    return {
+      isSuccess: false,
       message: "Failed to get suggested questions",
       data: [
         "What are the key innovations in this patent?",
         "How does this compare to existing patents?",
         "What are the potential applications of this technology?"
-      ] 
+      ]
     }
+  }
+}
+
+interface ChatResponse {
+  response: string
+  thread_id: string
+  patent_id: string
+}
+
+export async function chatWithPatentAgentAction(
+  patentId: string,
+  query: string,
+  threadId: string
+): Promise<ActionState<ChatResponse>> {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const {
+      data: { session }
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      return {
+        isSuccess: false,
+        message: "Not authenticated"
+      }
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
+    }
+
+    const url = new URL(`${apiPrefix}/patent-agent/chat`, apiUrl)
+
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify({
+        patent_id: patentId,
+        query: query,
+        thread_id: threadId
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to get chat response")
+    }
+
+    const data = await response.json()
+
+    return {
+      isSuccess: true,
+      message: "Chat response received successfully",
+      data: data.data
+    }
+  } catch (error) {
+    console.error("Error chatting with patent agent:", error)
+    return { isSuccess: false, message: "Failed to get chat response" }
+  }
+}
+
+export async function deleteThreadAction(
+  threadId: string
+): Promise<ActionState<void>> {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const {
+      data: { session }
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      return {
+        isSuccess: false,
+        message: "Not authenticated"
+      }
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
+    }
+
+    const url = new URL(`${apiPrefix}/patent-agent/thread/${threadId}`, apiUrl)
+
+    const response = await fetch(url.toString(), {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        Accept: "application/json"
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error("Failed to delete thread")
+    }
+
+    return {
+      isSuccess: true,
+      message: "Thread deleted successfully"
+    }
+  } catch (error) {
+    console.error("Error deleting thread:", error)
+    return { isSuccess: false, message: "Failed to delete thread" }
   }
 }

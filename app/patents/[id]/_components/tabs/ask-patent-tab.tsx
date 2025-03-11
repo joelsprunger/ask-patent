@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { askPatentQuestionAction } from "@/actions/patents-actions"
 import { Loader2, Send } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { ChatMessage, Chat } from "@/types"
@@ -14,6 +13,8 @@ import { v4 as uuidv4 } from "uuid"
 import { summarizeTextAction } from "@/actions/utils-actions"
 import { getSuggestedQuestionsAction } from "@/actions/patents-actions"
 import { useIncrementAIRequest } from "@/lib/providers/auth-provider"
+import { chatWithPatentAgentAction } from "@/actions/patents-actions"
+import { deleteThreadAction } from "@/actions/patents-actions"
 
 interface AskPatentTabProps {
   patentId: string
@@ -117,14 +118,18 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
     updateChat(updatedChat)
 
     try {
-      const response = await askPatentQuestionAction(patentId, question)
+      const response = await chatWithPatentAgentAction(
+        patentId,
+        question,
+        chat.id // Using chat.id as thread_id
+      )
       incrementAIRequest()
 
       if (response.isSuccess && response.data) {
         const assistantMessage: ChatMessage = {
           id: uuidv4(),
           role: "assistant",
-          content: response.data.answer,
+          content: response.data.response,
           timestamp: Date.now()
         }
 
@@ -140,7 +145,7 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
           await generateTitle(
             chat.id,
             question,
-            response.data.answer,
+            response.data.response,
             chatWithAnswer
           )
         }
@@ -207,7 +212,17 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
     setChats(prev => [...prev, newChat])
   }
 
-  const handleDeleteChat = (chatId: string) => {
+  const handleDeleteChat = async (chatId: string) => {
+    // First delete the thread from the backend
+    const response = await deleteThreadAction(chatId)
+
+    if (!response.isSuccess) {
+      // You might want to show an error toast here
+      console.error("Failed to delete thread:", response.message)
+      return
+    }
+
+    // Then update local state
     setChats(prev => prev.filter(chat => chat.id !== chatId))
     if (currentChat?.id === chatId) {
       const remainingChats = chats.filter(chat => chat.id !== chatId)
