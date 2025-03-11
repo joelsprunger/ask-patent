@@ -11,10 +11,12 @@ import { ChatMessages } from "./chat-messages"
 import { useLocalStorage } from "@/lib/hooks/use-local-storage"
 import { v4 as uuidv4 } from "uuid"
 import { summarizeTextAction } from "@/actions/utils-actions"
-import { getSuggestedQuestionsAction } from "@/actions/patents-actions"
+import {
+  getSuggestedQuestionsAction,
+  deleteThreadAction
+} from "@/actions/patents-actions"
 import { useIncrementAIRequest } from "@/lib/providers/auth-provider"
-import { chatWithPatentAgentAction } from "@/actions/patents-actions"
-import { deleteThreadAction } from "@/actions/patents-actions"
+import { streamFromApi } from "@/lib/utils/stream-helpers"
 
 interface AskPatentTabProps {
   patentId: string
@@ -26,6 +28,7 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
   const [chats, setChats] = useLocalStorage<Chat[]>("patent-chats", [])
   const [currentChat, setCurrentChat] = useState<Chat | null>(null)
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([])
+  const [streamingMessage, setStreamingMessage] = useState<string>("")
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const incrementAIRequest = useIncrementAIRequest()
 
@@ -100,8 +103,8 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
     setChats(prev => prev.map(c => (c.id === chat.id ? chat : c)))
   }
 
-  // Consolidated function to handle asking questions
-  async function handleAskQuestion(question: string, chat: Chat) {
+  // Function to stream chat response
+  async function streamChatResponse(question: string, chat: Chat) {
     const userMessage: ChatMessage = {
       id: uuidv4(),
       role: "user",
@@ -117,41 +120,73 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
     }
     updateChat(updatedChat)
 
+    // Reset streaming message
+    setStreamingMessage("")
+
+    // Get API URL
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      console.error("API URL or prefix not configured")
+      return
+    }
+
+    const url = new URL(`${apiPrefix}/patent-agent/chat`, apiUrl)
+
     try {
-      const response = await chatWithPatentAgentAction(
-        patentId,
-        question,
-        chat.id // Using chat.id as thread_id
-      )
-      incrementAIRequest()
+      await streamFromApi({
+        url: url.toString(),
+        method: "POST",
+        body: {
+          patent_id: patentId,
+          query: question,
+          thread_id: chat.id
+        },
+        onChunk: chunk => {
+          setStreamingMessage(prev => prev + chunk)
+        },
+        onComplete: async completeResponse => {
+          // Add the complete response as a message
+          const assistantMessage: ChatMessage = {
+            id: uuidv4(),
+            role: "assistant",
+            content: completeResponse,
+            timestamp: Date.now()
+          }
 
-      if (response.isSuccess && response.data) {
-        const assistantMessage: ChatMessage = {
-          id: uuidv4(),
-          role: "assistant",
-          content: response.data.response,
-          timestamp: Date.now()
-        }
+          const chatWithAnswer = {
+            ...updatedChat,
+            messages: [...updatedChat.messages, assistantMessage],
+            lastMessageAt: Date.now()
+          }
 
-        const chatWithAnswer = {
-          ...updatedChat,
-          messages: [...updatedChat.messages, assistantMessage],
-          lastMessageAt: Date.now()
-        }
-        updateChat(chatWithAnswer)
+          // Clear streaming message
+          setStreamingMessage("")
 
-        // Generate title for new chats
-        if (chat.messages.length === 0) {
-          await generateTitle(
-            chat.id,
-            question,
-            response.data.response,
-            chatWithAnswer
-          )
+          // Update chat with complete response
+          updateChat(chatWithAnswer)
+
+          // Generate title for new chats
+          if (chat.messages.length === 0) {
+            await generateTitle(
+              chat.id,
+              question,
+              completeResponse,
+              chatWithAnswer
+            )
+          }
+
+          // Increment AI request counter
+          incrementAIRequest()
+        },
+        onError: error => {
+          console.error("Error streaming chat:", error)
+          setStreamingMessage("")
         }
-      }
+      })
     } catch (error) {
-      console.error("Error asking question:", error)
+      console.error("Error streaming chat:", error)
+      setStreamingMessage("")
     }
   }
 
@@ -161,7 +196,7 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
 
     setIsLoading(true)
     try {
-      await handleAskQuestion(input, currentChat)
+      await streamChatResponse(input, currentChat)
       setInput("") // Clear input after successful submission
     } finally {
       setIsLoading(false)
@@ -193,7 +228,7 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
 
     setIsLoading(true)
     try {
-      await handleAskQuestion(question, chatToUse)
+      await streamChatResponse(question, chatToUse)
     } finally {
       setIsLoading(false)
     }
@@ -246,7 +281,7 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
       />
 
       <div className="flex flex-1 flex-col">
-        {currentChat?.messages.length === 0 ? (
+        {currentChat?.messages.length === 0 && !streamingMessage ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-8">
             <div className="w-full max-w-2xl space-y-4">
               <div className="flex items-center gap-2">
@@ -301,6 +336,7 @@ export function AskPatentTab({ patentId }: AskPatentTabProps) {
               <ChatMessages
                 messages={currentChat?.messages || []}
                 isLoading={isLoading}
+                streamingMessage={streamingMessage}
               />
               <div ref={messagesEndRef} />
             </ScrollArea>
