@@ -22,11 +22,12 @@ export async function getSimilarPatentsAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patents/${id}/similar`, apiUrl)
+    const url = new URL(`${apiPrefix}/patents/${id}/similar`, apiUrl)
 
     const response = await fetch(url.toString(), {
       method: "GET",
@@ -75,11 +76,12 @@ export async function getPatentSummaryAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patents/${id}/summarize`, apiUrl)
+    const url = new URL(`${apiPrefix}/patents/${id}/summarize`, apiUrl)
     url.searchParams.append("section", section)
 
     const response = await fetch(url.toString(), {
@@ -126,11 +128,12 @@ export async function askPatentQuestionAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patents/${patentId}/ask`, apiUrl)
+    const url = new URL(`${apiPrefix}/patents/${patentId}/ask`, apiUrl)
     url.searchParams.append("question", question)
     url.searchParams.append("k", k.toString())
 
@@ -180,11 +183,15 @@ export async function getSuggestedQuestionsAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patents/${patentId}/suggest_questions`, apiUrl)
+    const url = new URL(
+      `${apiPrefix}/patents/${patentId}/suggest_questions`,
+      apiUrl
+    )
     url.searchParams.append("n", n.toString())
     url.searchParams.append("section", section)
 
@@ -245,11 +252,12 @@ export async function chatWithPatentAgentAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL("/patent-agent/chat", apiUrl)
+    const url = new URL(`${apiPrefix}/patent-agent/chat`, apiUrl)
 
     const response = await fetch(url.toString(), {
       method: "POST",
@@ -299,11 +307,12 @@ export async function deleteThreadAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patent-agent/thread/${threadId}`, apiUrl)
+    const url = new URL(`${apiPrefix}/patent-agent/thread/${threadId}`, apiUrl)
 
     const response = await fetch(url.toString(), {
       method: "DELETE",

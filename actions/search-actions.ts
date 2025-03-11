@@ -10,7 +10,6 @@ export async function searchPatentsAction(
   section?: string
 ): Promise<ActionState<Patent[]>> {
   try {
-    
     const supabase = await createServerSupabaseClient()
     const {
       data: { session }
@@ -24,12 +23,13 @@ export async function searchPatentsAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL("/search/patents", apiUrl)
-    
+    const url = new URL(`${apiPrefix}/search/patents`, apiUrl)
+
     // Create the request body according to the SearchRequest schema
     const requestBody = {
       query,
@@ -40,17 +40,19 @@ export async function searchPatentsAction(
     const response = await fetch(url.toString(), {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${session.access_token}`,
+        Authorization: `Bearer ${session.access_token}`,
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        Accept: "application/json"
       },
       body: JSON.stringify(requestBody)
     })
-    
+
     const responseData = await response.json()
 
     if (!response.ok) {
-      throw new Error(`Failed to search patents: ${responseData.message || 'Unknown error'}`)
+      throw new Error(
+        `Failed to search patents: ${responseData.message || "Unknown error"}`
+      )
     }
 
     return {

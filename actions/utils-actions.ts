@@ -21,10 +21,11 @@ export async function summarizeTextAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
-    const url = new URL("/utils/summarize", apiUrl)
+    const url = new URL(`${apiPrefix}/utils/summarize`, apiUrl)
     url.searchParams.append("input_text", text)
     url.searchParams.append("n_words", nWords.toString())
 
@@ -52,4 +53,4 @@ export async function summarizeTextAction(
     console.error("[Summarize Text] Error:", error)
     return { isSuccess: false, message: "Failed to summarize text" }
   }
-} 
+}

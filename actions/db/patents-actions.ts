@@ -46,11 +46,12 @@ export async function getSimilarPatentsAction(
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL
-    if (!apiUrl) {
-      throw new Error("API URL not configured")
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
     }
 
-    const url = new URL(`/patents/${id}/similar`, apiUrl)
+    const url = new URL(`${apiPrefix}/patents/${id}/similar`, apiUrl)
 
     const response = await fetch(url.toString(), {
       method: "GET",
