@@ -290,6 +290,52 @@ export async function chatWithPatentAgentAction(
   }
 }
 
+export async function generateHolisticSummaryAction(
+  patentId: string
+): Promise<ActionState<{ summary: string; generated_at: string }>> {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const {
+      data: { session }
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      return { isSuccess: false, message: "Not authenticated" }
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL
+    const apiPrefix = process.env.NEXT_PUBLIC_API_PREFIX
+    if (!apiUrl || !apiPrefix) {
+      throw new Error("API URL or prefix not configured")
+    }
+
+    const url = new URL(`${apiPrefix}/patents/${patentId}/holistic-summary`, apiUrl)
+
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        Accept: "application/json"
+      }
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.message || "Failed to generate summary")
+    }
+
+    return {
+      isSuccess: true,
+      message: "Holistic summary generated successfully",
+      data: data.data
+    }
+  } catch (error) {
+    console.error("[Holistic Summary] Error:", error)
+    return { isSuccess: false, message: "Failed to generate holistic summary" }
+  }
+}
+
 export async function deleteThreadAction(
   threadId: string
 ): Promise<ActionState<void>> {

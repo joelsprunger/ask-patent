@@ -3,7 +3,7 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Patent } from "@/types/patents-types"
 import { RelatedPatentsTab } from "./tabs/related-patents-tab"
-import { SummaryTab } from "./tabs/summary-tab"
+import { DocumentTab } from "./tabs/document-tab"
 import { AskPatentTab } from "./tabs/ask-patent-tab"
 
 interface PatentTabsProps {
@@ -16,19 +16,19 @@ export function PatentTabs({ similarPatents, patentId }: PatentTabsProps) {
     <div className="space-y-4">
       <h2 className="text-2xl font-bold">Patent Tools</h2>
 
-      <Tabs defaultValue="related" className="w-full">
+      <Tabs defaultValue="document" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="document">Content</TabsTrigger>
           <TabsTrigger value="related">Related</TabsTrigger>
-          <TabsTrigger value="summary">Summary</TabsTrigger>
           <TabsTrigger value="ask">Ask Patent</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="related">
-          <RelatedPatentsTab similarPatents={similarPatents} />
+        <TabsContent value="document">
+          <DocumentTab patentId={patentId} />
         </TabsContent>
 
-        <TabsContent value="summary">
-          <SummaryTab patentId={patentId} />
+        <TabsContent value="related">
+          <RelatedPatentsTab similarPatents={similarPatents} />
         </TabsContent>
 
         <TabsContent value="ask">
