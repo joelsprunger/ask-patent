@@ -24,6 +24,8 @@
     "@radix-ui/react-toast": "^1.2.2",
     "@radix-ui/react-tooltip": "^1.1.7",
     "@supabase/ssr": "^0.5.1",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.22",
     "@types/sharp": "^0.31.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

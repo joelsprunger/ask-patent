@@ -1,8 +1,11 @@
 "use server"
 
 import { createServerSupabaseClient } from "@/lib/supabase/server"
-import { Patent } from "@/types/patent-types"
+import { Patent, PatentQuery } from "@/types/patent-types"
 import { ActionState } from "@/types"
+
+const PATENT_SELECT =
+  "id, patent_number, lens_id, title, abstract, assignee, assignees, inventors, filing_date, grant_date, date_published, metadata, created_at, updated_at"
 
 export async function getPatentByIdAction(
   id: string
@@ -89,9 +92,7 @@ export async function getPaginatedPatentsAction(
 
     const { data: patents, error } = await supabase
       .from("patents")
-      .select(
-        "id, patent_number, title, authors, abstract, applicant, patent_type, filing_date, created_at, updated_at"
-      )
+      .select(PATENT_SELECT)
       .order(sortBy, { ascending: sortOrder === "asc" })
       .range((page - 1) * pageSize, page * pageSize - 1)
 
@@ -105,6 +106,90 @@ export async function getPaginatedPatentsAction(
   } catch (error) {
     console.error("Error getting paginated patents:", error)
     return { isSuccess: false, message: "Failed to get paginated patents" }
+  }
+}
+
+export async function getFilteredPatentsAction(
+  query: PatentQuery
+): Promise<ActionState<{ patents: Patent[]; nextCursor: string | null; prevCursor: string | null; totalCount: number }>> {
+  try {
+    const supabase = await createServerSupabaseClient()
+    const { filters, sortBy, sortOrder, cursor, limit, direction } = query
+    const asc = direction === "backward" ? sortOrder !== "asc" : sortOrder === "asc"
+
+    let patentIds: string[] | null = null
+
+    // Full-text search via tsvector RPC — returns ranked patent IDs
+    if (filters.search && filters.search.trim()) {
+      const { data: searchRows, error: searchError } = await supabase.rpc(
+        "search_patent_sections",
+        { search_query: filters.search.trim(), section_filter: null, match_count: 500 }
+      )
+      if (searchError) throw searchError
+      patentIds = (searchRows ?? []).map((r: { patent_id: string }) => r.patent_id)
+      if (!patentIds || patentIds.length === 0) {
+        return {
+          isSuccess: true,
+          message: "No results",
+          data: { patents: [], nextCursor: null, prevCursor: null, totalCount: 0 }
+        }
+      }
+    }
+
+    // Count query with same filters but no cursor/limit
+    let countQ = (supabase as any).from("patents").select("id", { count: "exact", head: true })
+    if (patentIds) countQ = countQ.in("id", patentIds)
+    if (filters.assignee) countQ = countQ.ilike("assignee", `%${filters.assignee}%`)
+    if (filters.patentNumber) countQ = countQ.ilike("patent_number", `%${filters.patentNumber}%`)
+    if (filters.inventor) countQ = countQ.contains("inventors", [filters.inventor])
+    if (filters.dateRange) {
+      countQ = countQ.gte("filing_date", filters.dateRange[0]).lte("filing_date", filters.dateRange[1])
+    }
+    const { count: totalCount } = await countQ
+
+    let q = supabase.from("patents").select(PATENT_SELECT)
+
+    if (patentIds) q = q.in("id", patentIds)
+    if (filters.assignee) q = q.ilike("assignee", `%${filters.assignee}%`)
+    if (filters.patentNumber) q = q.ilike("patent_number", `%${filters.patentNumber}%`)
+    if (filters.inventor) q = q.contains("inventors", [filters.inventor])
+    if (filters.dateRange) {
+      q = q.gte("filing_date", filters.dateRange[0]).lte("filing_date", filters.dateRange[1])
+    }
+
+    // Cursor-based pagination
+    if (cursor) {
+      const op = asc ? "gt" : "lt"
+      q = q.filter(sortBy, op, cursor)
+    }
+
+    q = q.order(sortBy, { ascending: asc }).limit(limit + 1)
+
+    const { data: rows, error } = await q
+    if (error) throw error
+
+    const hasMore = (rows?.length ?? 0) > limit
+    const patents = (rows ?? []).slice(0, limit) as Patent[]
+
+    const lastVal = (patents[patents.length - 1] as unknown as Record<string, unknown>)[sortBy]
+    const firstVal = (patents[0] as unknown as Record<string, unknown>)[sortBy]
+
+    const nextCursor =
+      direction !== "backward" && hasMore ? String(lastVal ?? "") : null
+    const prevCursor =
+      cursor && direction !== "forward" ? String(firstVal ?? "") : null
+
+    // When going backward the results arrive in reversed order — fix them
+    if (!asc && direction === "backward") patents.reverse()
+
+    return {
+      isSuccess: true,
+      message: "Patents retrieved successfully",
+      data: { patents, nextCursor, prevCursor, totalCount: totalCount ?? 0 }
+    }
+  } catch (error) {
+    console.error("Error getting filtered patents:", error)
+    return { isSuccess: false, message: "Failed to get filtered patents" }
   }
 }
 

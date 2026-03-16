@@ -20,8 +20,8 @@ export function PatentCard({
   index = 0,
   animate = true
 }: PatentCardProps) {
-  const authorString = patent.authors
-    ? patent.authors.join(" ").replace(/\s+/g, " ").trim()
+  const authorString = patent.inventors
+    ? patent.inventors.join(" ").replace(/\s+/g, " ").trim()
     : ""
 
   const content = (
