@@ -250,9 +250,9 @@ export async function getPatentSectionsAction(
     if (error) throw error
 
     const all = (data ?? []).filter((s: PatentSectionData) => s.section_type !== "ai_summary")
-    const hasParsedSections = all.some(s => s.section_type !== "full_content")
+    const hasParsedSections = all.some((s: PatentSectionData) => s.section_type !== "full_content")
 
-    const ordered = (hasParsedSections ? all.filter(s => s.section_type !== "full_content") : all)
+    const ordered = (hasParsedSections ? all.filter((s: PatentSectionData) => s.section_type !== "full_content") : all)
       .sort((a: PatentSectionData, b: PatentSectionData) => {
         const ai = DOCUMENT_SECTION_ORDER.indexOf(a.section_type)
         const bi = DOCUMENT_SECTION_ORDER.indexOf(b.section_type)

@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import {
   flexRender,
-  Table as TanTable,
-  SortingState
+  Table as TanTable
 } from "@tanstack/react-table"
 import { ArrowUp, ArrowDown, ArrowUpDown, Loader2 } from "lucide-react"
 import { Patent, PatentFilter } from "@/types/patent-types"
@@ -48,8 +47,6 @@ function FilterInput({
 
 interface PatentTableViewProps {
   table: TanTable<Patent>
-  patents: Patent[]
-  sorting: SortingState
   filters: PatentFilter
   onFilterChange: (key: keyof PatentFilter, value: string) => void
   isLoading: boolean
@@ -60,8 +57,6 @@ interface PatentTableViewProps {
 
 export function PatentTableView({
   table,
-  patents,
-  sorting,
   filters,
   onFilterChange,
   isLoading,

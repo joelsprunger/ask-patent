@@ -10,7 +10,6 @@ import {
   createColumnHelper
 } from "@tanstack/react-table"
 import { LayoutGrid, List } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { Patent, PatentFilter, PatentQuery } from "@/types/patent-types"
 import { getFilteredPatentsAction } from "@/actions/db/patents-actions"
@@ -52,7 +51,6 @@ const columns: ColumnDef<Patent, string>[] = [
           <TooltipContent
             side="bottom"
             className="max-w-sm text-xs leading-relaxed"
-            hideDelay={3000}
           >
             {abstract}
           </TooltipContent>
@@ -257,8 +255,6 @@ export default function BrowsePatents() {
       {view === "table" ? (
         <PatentTableView
           table={table}
-          patents={patents}
-          sorting={sorting}
           filters={filters}
           onFilterChange={handleFilterChange}
           isLoading={isLoading}
