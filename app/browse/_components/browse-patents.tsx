@@ -64,12 +64,41 @@ const columns: ColumnDef<Patent, string>[] = [
     id: "inventor",
     header: "Inventors",
     size: 220,
-    cell: info => info.getValue() || <span className="text-zinc-400">—</span>
+    cell: info => {
+      const value = info.getValue()
+      const inventors = info.row.original.inventors
+      if (!value) return <span className="text-zinc-400">—</span>
+      // Only show tooltip if there are multiple inventors (truncation likely)
+      if (!inventors || inventors.length <= 1) return <span>{value}</span>
+      return (
+        <Tooltip delayDuration={400}>
+          <TooltipTrigger asChild>
+            <span className="truncate block cursor-default">{value}</span>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs text-xs">
+            <ul className="space-y-0.5">
+              {inventors.map((inv, i) => (
+                <li key={i}>{inv}</li>
+              ))}
+            </ul>
+          </TooltipContent>
+        </Tooltip>
+      )
+    }
   }),
   columnHelper.accessor(row => row.filing_date ?? "", {
     id: "filing_date",
     header: "Filed",
-    size: 110,
+    size: 100,
+    cell: info => {
+      const v = info.getValue()
+      return v ? new Date(v).toLocaleDateString() : <span className="text-zinc-400">—</span>
+    }
+  }),
+  columnHelper.accessor(row => row.date_published ?? "", {
+    id: "date_published",
+    header: "Published",
+    size: 105,
     cell: info => {
       const v = info.getValue()
       return v ? new Date(v).toLocaleDateString() : <span className="text-zinc-400">—</span>

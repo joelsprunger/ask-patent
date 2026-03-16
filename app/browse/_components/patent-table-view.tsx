@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useCallback } from "react"
+import React, { useRef, useCallback, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import {
@@ -14,6 +14,37 @@ import { Input } from "@/components/ui/input"
 import { TooltipProvider } from "@/components/ui/tooltip"
 
 const NO_FILTER_COLUMNS = new Set(["abstract", "assignee"])
+
+// Uncontrolled input that maintains its own local state to avoid resetting
+// on every parent re-render while the debounce is pending.
+function FilterInput({
+  externalValue,
+  onChange,
+  placeholder
+}: {
+  externalValue: string
+  onChange: (value: string) => void
+  placeholder: string
+}) {
+  const [local, setLocal] = useState(externalValue)
+
+  // Sync downward only when the external value is cleared (e.g. filter chip removed)
+  useEffect(() => {
+    if (!externalValue) setLocal("")
+  }, [externalValue])
+
+  return (
+    <Input
+      value={local}
+      onChange={e => {
+        setLocal(e.target.value)
+        onChange(e.target.value)
+      }}
+      placeholder={placeholder}
+      className="h-7 text-xs mt-1 bg-white dark:bg-zinc-800"
+    />
+  )
+}
 
 interface PatentTableViewProps {
   table: TanTable<Patent>
@@ -112,13 +143,10 @@ export function PatentTableView({
                       )}
                     </button>
                     {!NO_FILTER_COLUMNS.has(colId) && (
-                      <Input
-                        value={(filters[colId as keyof PatentFilter] as string) ?? ""}
-                        onChange={e =>
-                          onFilterChange(colId as keyof PatentFilter, e.target.value)
-                        }
+                      <FilterInput
+                        externalValue={(filters[colId as keyof PatentFilter] as string) ?? ""}
+                        onChange={val => onFilterChange(colId as keyof PatentFilter, val)}
                         placeholder="Filter…"
-                        className="h-7 text-xs mt-1 bg-white dark:bg-zinc-800"
                       />
                     )}
                   </div>

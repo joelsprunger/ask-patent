@@ -11,10 +11,11 @@ interface FilterChipsProps {
 
 const LABELS: Record<keyof PatentFilter, string> = {
   search: "Search",
+  title: "Title",
   assignee: "Assignee",
   inventor: "Inventor",
+  patent_number: "Patent #",
   dateRange: "Date range",
-  patentNumber: "Patent #"
 }
 
 export function FilterChips({ filters, onRemove, onEditFilters }: FilterChipsProps) {
